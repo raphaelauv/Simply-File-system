@@ -1,23 +1,34 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <string.h>
 typedef struct {
-    int size;
-    char* data2;
+    int val;
+    char* message;
 } error;
 
 
 typedef struct {
-    char* name;//emplacement
+	FILE * fichier;
+	int flags;
 } disk_id;
 
+typedef struct{
+	unsigned char val[4];
+}nombre32bits;
+
+
 typedef struct {
-    int number;
+	nombre32bits* valeur[256];
 } block;
 
-error start_disk(char *name,disk_id *id); //qui permet de manipuler un disque en lui associant une identité dynamique;
-error read_block(disk_id id,block b,uint32_t num); //qui permet de lire un bloc sur le disque (lire annexe sur la raison de différencier cette fonction et la fonction read_physical_block);
-error write_block(disk_id id,block b,uint32_t num); //qui permet d’écrire un bloc sur le disque (même remarque que la fonction précédente);
-error sync_disk(disk_id id); //(voir annexe - en première approximation cette fonction peut ne rien faire du tout;
+
+
+error start_disk(char *name,disk_id *id); //qui permet de manipuler un disque en lui associant une identitï¿½ dynamique;
+error read_block(disk_id id,block b,uint32_t num); //qui permet de lire un bloc sur le disque (lire annexe sur la raison de diffï¿½rencier cette fonction et la fonction read_physical_block);
+error write_block(disk_id id,block b,uint32_t num); //qui permet dï¿½ï¿½crire un bloc sur le disque (mï¿½me remarque que la fonction prï¿½cï¿½dente);
+error sync_disk(disk_id id); //(voir annexe - en premiï¿½re approximation cette fonction peut ne rien faire du tout;
 error stop_disk(disk_id id); //qui permet de terminer une session de travail sur un disque.
 
