@@ -32,3 +32,9 @@ error write_block(disk_id id,block b,uint32_t num); //qui permet d��crire un
 error sync_disk(disk_id id); //(voir annexe - en premi�re approximation cette fonction peut ne rien faire du tout;
 error stop_disk(disk_id id); //qui permet de terminer une session de travail sur un disque.
 
+block* initBlock();
+void freeBlock(block* block);
+void freeDisk(disk_id*disk);
+nombre32bits* valueToNombre32bits (uint32_t n);
+uint32_t nombre32bitsToValue(nombre32bits *bytes);
+void printNombre32bits (nombre32bits *bytes);
