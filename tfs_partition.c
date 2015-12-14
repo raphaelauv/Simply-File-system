@@ -1,13 +1,13 @@
 #include "ll.h"
 
 int main(int argc, char *argv[]) {
-
+/*
 	int i;
 
 	for (i = 0; i < argc; i++) {
 		printf("Argument %ld : %s \n", i, argv[i]);
 	}
-
+*/
 	if (argc == 2 && strcmp(argv[1], "-p") == 0) {
 		fprintf(stderr,
 				"\ntfs_partition with the option -p \nneed at minimum 1 argument :"
@@ -18,11 +18,9 @@ int main(int argc, char *argv[]) {
 		int NameSelected;
 		if ((argc - 1) % 2 == 0) {
 			//there is no name give at the end
-			printf("nombre pair , no selected name\n");
 			NameSelected = 0;
 		} else {
 			NameSelected = 1;
-			printf("nombre impair , there is a selected nom\n");
 		}
 
 		if (NameSelected == 1 && strcmp(argv[argc - 1], "-p") == 0) {
@@ -78,7 +76,6 @@ int main(int argc, char *argv[]) {
 		} else {
 			nameFile = argv[argc - 1];
 		}
-
 		block *b;
 		b=initBlock();
 		er = start_disk(nameFile, disk);
@@ -86,19 +83,10 @@ int main(int argc, char *argv[]) {
 		er = read_block(*disk, *b, 0);
 		testerror(er);
 
-
-		//a corriger , obliger de fermer puis reouvrir pour faire des ecriture apres lecture
-		er=stop_disk(*disk);
-		testerror(er);
-		er=start_disk(nameFile,disk);
-		testerror(er);
-
-
-
 		int sizeActual = nombre32bitsToValue(b->valeur[0]);
 		int nbParitionActual = nombre32bitsToValue(b->valeur[1]);
 
-		printf("taille actuel : %d | nb of actual partitions  %d\n", sizeActual,
+		printf("taille du disque : %d | nb of actual partitions  %d\n", sizeActual,
 				nbParitionActual);
 
 		int sizeOccupedByPartitions = 0;
@@ -110,7 +98,7 @@ int main(int argc, char *argv[]) {
 
 		int sizeAvailable = sizeActual - 1 - sizeOccupedByPartitions;
 		if (sizeAvailable < sizeTotalOfPartition) {
-			er.message = "the total of size of partition(s)\n "
+			er.message = "\nthe total of size's partition(s)\n "
 					"is bigger than the available size on the drive\n";
 			er.val = 1;
 			testerror(er);
@@ -119,7 +107,7 @@ int main(int argc, char *argv[]) {
 		int nbParitionTOtal = nbParitionActual + nbPartitions;
 
 		if (nbParitionTOtal > 253) {
-			er.message = "the number of partitions is limited to 253\n";
+			er.message = "\nthe number of partitions is limited to 253\n";
 			er.val = 1;
 			testerror(er);
 		}
@@ -128,13 +116,13 @@ int main(int argc, char *argv[]) {
 		b->valeur[1] = valueToNombre32bits(nbParitionTOtal);
 
 		int j = 0;
+
+		printf("nb partitions actual %d\n",nbParitionActual);
 		for (i = 0; i < nbPartitions; i++) {
 
-			printf("nb partitions actual %d\n",nbParitionActual);
 			int val=2+nbParitionActual+i;
 
 			b->valeur[val] = valueToNombre32bits(sizeOfNewPartitions[j]);
-
 
 			printNombre32bits(b->valeur[val]);
 
