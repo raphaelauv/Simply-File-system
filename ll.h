@@ -39,3 +39,4 @@ nombre32bits* valueToNombre32bits (uint32_t n);
 uint32_t nombre32bitsToValue(nombre32bits *bytes);
 void printNombre32bits (nombre32bits *bytes);
 void testerror(error er);
+int* getInfo(block * b);

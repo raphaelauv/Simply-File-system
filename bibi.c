@@ -10,8 +10,7 @@ void testerror(error er) {
 
 int* getInfo(block * b) {
 	/*
-	 *
-	 * the size of array is array[2]+5
+	 the size of array is array[2]+5
 	 size of drive
 	 nb of partitions
 	 size of the i partition
@@ -19,16 +18,15 @@ int* getInfo(block * b) {
 	 size availlable on drive
 	 nb of maximum partition possible
 	 */
-
 	int nbParitionActual = nombre32bitsToValue(b->valeur[1]);
-
-	int* array[5 + nbParitionActual];
+	int *array=malloc(5 + nbParitionActual);
 	array[0] = nombre32bitsToValue(b->valeur[0]); //size of drive
 	array[1] = nbParitionActual; //nb of partitions
 
 	int sizeOccupedByPartitions = 0;
 	int tailleTmp;
 	int i;
+
 	for (i = 0; i < nbParitionActual; i++) {
 		tailleTmp = nombre32bitsToValue(b->valeur[2 + i]);
 		array[2 + i] = tailleTmp; //size of the i partition
@@ -44,9 +42,7 @@ int* getInfo(block * b) {
 	} else {
 		array[4 + nbParitionActual] = max - nbParitionActual;
 	}
-
 	return array;
-
 }
 
 error stop_disk(disk_id id) {
@@ -173,20 +169,21 @@ void freeDisk(disk_id*disk) {
 	free(disk);
 }
 
-error read_physical_block(disk_id id, block b, uint32_t num) {
+error static read_physical_block(disk_id id, block b, uint32_t num) {
 
 	error er;
+	/*
 	printf("position actuelle : %d\n", (int) ftell(id.fichier));
 	rewind(id.fichier);
 	printf("revenu a zero\n");
+	*/
 	fseek(id.fichier, num, SEEK_SET);
-	printf("en position : %d\n", num);
+	//printf("en position : %d\n", num);
 	int i;
 	int ecris;
 	for (i = 0; i < 256; i++) {
 		ecris = fread((b.valeur[i]), 1, 4, id.fichier);
 		//printNombre32bits(b.valeur[i]);
-
 		if (ecris != 4) {
 			er.val = 1;
 			er.message = "error during write_physical_block in file";
@@ -196,10 +193,10 @@ error read_physical_block(disk_id id, block b, uint32_t num) {
 	return er;
 
 }
-error write_physical_block(disk_id id, block b, uint32_t num) {
+error static write_physical_block(disk_id id, block b, uint32_t num) {
 	int i;
 	int ecris;
-
+	fseek(id.fichier, num, SEEK_SET);
 	error er;
 
 	for (i = 0; i < 256; i++) {
@@ -215,6 +212,7 @@ error write_physical_block(disk_id id, block b, uint32_t num) {
 			er.message = "error during write_physical_block in file";
 		}
 	}
+	fflush(id.fichier);
 	er.val = 0;
 	return er;
 }
