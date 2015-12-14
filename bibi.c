@@ -1,9 +1,53 @@
 #include "ll.h"
 
-/*
- Function check_for_endianness() returns 1, if architecture
- is little endian, 0 in case of big endian.
- */
+void testerror(error er) {
+	if (er.val != 0) {
+		fprintf(stderr, "%s", er.message);
+		exit(er.val);
+
+	}
+}
+
+int* getInfo(block * b) {
+	/*
+	 *
+	 * the size of array is array[2]+5
+	 size of drive
+	 nb of partitions
+	 size of the i partition
+	 addition of the size of all partitions
+	 size availlable on drive
+	 nb of maximum partition possible
+	 */
+
+	int nbParitionActual = nombre32bitsToValue(b->valeur[1]);
+
+	int* array[5 + nbParitionActual];
+	array[0] = nombre32bitsToValue(b->valeur[0]); //size of drive
+	array[1] = nbParitionActual; //nb of partitions
+
+	int sizeOccupedByPartitions = 0;
+	int tailleTmp;
+	int i;
+	for (i = 0; i < nbParitionActual; i++) {
+		tailleTmp = nombre32bitsToValue(b->valeur[2 + i]);
+		array[2 + i] = tailleTmp; //size of the i partition
+		sizeOccupedByPartitions = sizeOccupedByPartitions + tailleTmp;
+	}
+	array[2 + nbParitionActual] = sizeOccupedByPartitions; //addition of the size of all partitions
+	array[3 + nbParitionActual] = array[0] - 1 - sizeOccupedByPartitions; //size availlable on drive
+	int max = 253 - nbParitionActual;
+
+	//nb of maximum partition possible
+	if (max > array[3 + nbParitionActual]) {
+		array[4 + nbParitionActual] = array[3 + nbParitionActual];
+	} else {
+		array[4 + nbParitionActual] = max - nbParitionActual;
+	}
+
+	return array;
+
+}
 
 error stop_disk(disk_id id) {
 	error er;
@@ -21,6 +65,12 @@ error stop_disk(disk_id id) {
 	return er;
 
 }
+
+/*
+ Function check_for_endianness() returns 1, if architecture
+ is little endian, 0 in case of big endian.
+ */
+
 int check_for_endianness() {
 	unsigned int x = 1;
 	char *c = (char*) &x;
@@ -132,9 +182,15 @@ error read_physical_block(disk_id id, block b, uint32_t num) {
 	fseek(id.fichier, num, SEEK_SET);
 	printf("en position : %d\n", num);
 	int i;
+	int ecris;
 	for (i = 0; i < 256; i++) {
-		fread((b.valeur[i]), (sizeof(unsigned char)), 4, id.fichier);
+		ecris = fread((b.valeur[i]), 1, 4, id.fichier);
 		//printNombre32bits(b.valeur[i]);
+
+		if (ecris != 4) {
+			er.val = 1;
+			er.message = "error during write_physical_block in file";
+		}
 	}
 	er.val = 0;
 	return er;
@@ -142,6 +198,10 @@ error read_physical_block(disk_id id, block b, uint32_t num) {
 }
 error write_physical_block(disk_id id, block b, uint32_t num) {
 	int i;
+	int ecris;
+
+	error er;
+
 	for (i = 0; i < 256; i++) {
 
 		if (b.valeur[i] == NULL) {
@@ -149,9 +209,12 @@ error write_physical_block(disk_id id, block b, uint32_t num) {
 			b.valeur[i] = valueToNombre32bits(0);
 		}
 		//printNombre32bits(b.valeur[i]);
-		fwrite(b.valeur[i], 1, 4, id.fichier);
+		ecris = fwrite(b.valeur[i], 1, 4, id.fichier);
+		if (ecris != 4) {
+			er.val = 1;
+			er.message = "error during write_physical_block in file";
+		}
 	}
-	error er;
 	er.val = 0;
 	return er;
 }
@@ -171,21 +234,10 @@ error start_disk(char *name, disk_id *id) {
 	FILE *fichier;
 	fichier = fopen(name, "r+");
 	if (fichier == NULL) {
-		printf("the file does not exit , we gone a try to create it\n");
-		fichier = fopen(name, "a");
-		if (fichier == NULL) {
-			er.message = "fail of creation of file";
-			er.val = 1;
-			return er;
-		}
-		fclose(fichier);
-		fichier = fopen(name, "r+");
-		if (fichier == NULL) {
-			er.val = 1;
-			return er;
-		}
-
-		printf("the file %s have been created\n ", name);
+		er.val = 1;
+		er.message = "Error at the opening of the file specified,\n"
+				" if it do not exist \n you should execute tfs_create";
+		return er;
 	}
 	id->fichier = fichier;
 	er.val = 0;
@@ -197,46 +249,46 @@ error sync_disk(disk_id id) {
 	return er;
 }
 /*
-int main(int argc, char *argv[]) {
+ int main(int argc, char *argv[]) {
 
-	printf("%s\n", argv[0]);
-	char cwd[1024];
-	if (getcwd(cwd, sizeof(cwd)) != NULL)
-		fprintf(stdout, "Current working dir: %s\n", cwd);
-	else
-		perror("getcwd() error");
-	//disk_id a;
-	block *b = malloc(sizeof(*b));
+ printf("%s\n", argv[0]);
+ char cwd[1024];
+ if (getcwd(cwd, sizeof(cwd)) != NULL)
+ fprintf(stdout, "Current working dir: %s\n", cwd);
+ else
+ perror("getcwd() error");
+ //disk_id a;
+ block *b = malloc(sizeof(*b));
 
-	printNombre32bits(intToNombre32bits(2349));
-	b->valeur[0] = intToNombre32bits(2389);
-	b->valeur[1] = intToNombre32bits(876);
+ printNombre32bits(intToNombre32bits(2349));
+ b->valeur[0] = intToNombre32bits(2389);
+ b->valeur[1] = intToNombre32bits(876);
 
-	char toto[10] = "papapap";
-	char* v = toto;
-	printf("nom de fichier : %s\n", v);
-	disk_id *disque = malloc(sizeof(*disque));
+ char toto[10] = "papapap";
+ char* v = toto;
+ printf("nom de fichier : %s\n", v);
+ disk_id *disque = malloc(sizeof(*disque));
 
-	start_disk(v, disque);
+ start_disk(v, disque);
 
-	//write_physical_block(*disque,*b,0);
+ //write_physical_block(*disque,*b,0);
 
-	block*b2 = initBlock();
+ block*b2 = initBlock();
 
-	read_physical_block(*disque, *b2, 0);
+ read_physical_block(*disque, *b2, 0);
 
-	free(b2);
+ free(b2);
 
-	uint32_t a = 4294967295;
+ uint32_t a = 4294967295;
 
-	printf("valeur demande : %lu\n", (unsigned long) a);
-	nombre32bits*coco = valueToNombre32bits(a);
-	printNombre32bits(coco);
-	uint32_t toto;
-	toto = nombre32bitsToValue(coco);
-	printf("toto : %lu\n", (unsigned long) toto);
+ printf("valeur demande : %lu\n", (unsigned long) a);
+ nombre32bits*coco = valueToNombre32bits(a);
+ printNombre32bits(coco);
+ uint32_t toto;
+ toto = nombre32bitsToValue(coco);
+ printf("toto : %lu\n", (unsigned long) toto);
 
-	return 0;
-}
+ return 0;
+ }
 
-*/
+ */
