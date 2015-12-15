@@ -41,6 +41,9 @@ int main(int argc, char *argv[]) {
 	printf("ESPACE DISPONIBLE : %d\n",array[nbPartitions+3]);
 	printf("NOMBRE MAX DE PARTITION ENCORE CREABLE : %d\n",array[nbPartitions+4]);
 
-
+	er = stop_disk(*disk);
+		testerror(er);
+		freeBlock(b);
+		freeDisk(disk);
 	return 0;
 }
