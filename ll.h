@@ -4,11 +4,14 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+
+
+#define TFS_VOLUME_BLOCK_SIZE 1024
+
 typedef struct {
     int val;
     char* message;
 } error;
-
 
 typedef struct {
 	FILE * fichier;
@@ -21,7 +24,7 @@ typedef struct{
 
 
 typedef struct {
-	nombre32bits* valeur[256];
+	nombre32bits* valeur[TFS_VOLUME_BLOCK_SIZE/4];
 } block;
 
 
@@ -40,3 +43,7 @@ uint32_t nombre32bitsToValue(nombre32bits *bytes);
 void printNombre32bits (nombre32bits *bytes);
 void testerror(error er);
 int* getInfo(block * b);
+int firstblockPositionOfPartition(int nbPartition, disk_id disk);
+
+void printBlock(block * block);
+int getSizePartition(int n,disk_id disk);

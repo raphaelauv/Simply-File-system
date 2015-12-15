@@ -130,7 +130,9 @@ int main(int argc, char *argv[]) {
 					sizeOfNewPartitions[j]);
 			j++;
 		}
+
 		er = write_block(*disk, *b, 0);
+		printf("\nposition partition 5 :%d\n",firstblockPositionOfPartition(5,*disk));
 		testerror(er);
 		er = stop_disk(*disk);
 		testerror(er);
