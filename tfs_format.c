@@ -1,11 +1,10 @@
-#include "ll.h"
 #include "tfs.h"
 
 int main(int argc, char *argv[]) {
 
 	if (argc < 5 || argc > 6 || strcmp(argv[1], "-p") != 0
 			|| strcmp(argv[3], "-mf") != 0) {
-		printf("ERREUR");
+		printf("ERREUR WITH ARGUMENTS");
 		return 1;
 
 	}
@@ -49,16 +48,28 @@ int main(int argc, char *argv[]) {
 	testerror(er);
 	int positionFirstBlock=firstblockPositionOfPartition(nbPartition,*disk);
 
+	if(positionFirstBlock ==-1){
+		er.val=1;
+		er.message="The partition selected do not exist in the tfs";
+		testerror(er);
+	}
 	printf("position : %d\n",positionFirstBlock);
+
+	partition *p=malloc(sizeof(partition));
+	p->disque=disk;
+	p->firstPositionInTFS=positionFirstBlock;
+
+	er=readBlockOfPartition(*p,*b,p->firstPositionInTFS);
 
 	er = read_block(*disk, *b,positionFirstBlock);
 	testerror(er);
 
-	//printBlock(b);
+
 	b->valeur[0] = valueToNombre32bits(TTTFS_MAGIC_NUMBER);
-	b->valeur[1] = valueToNombre32bits(1024);
+	b->valeur[1] = valueToNombre32bits(TFS_VOLUME_BLOCK_SIZE);
 
 	int sizePartition=getSizePartition(nbPartition,*disk);
+	int nbFreeBlock =sizePartition-1;
 
 	printf("size partition ask : %d\n",sizePartition);
 	b->valeur[2] = valueToNombre32bits(sizePartition);

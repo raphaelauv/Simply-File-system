@@ -18,6 +18,12 @@ typedef struct {
 	int flags;
 } disk_id;
 
+typedef struct {
+	uint32_t firstPositionInTFS;
+	disk_id *disque;
+} partition;
+
+
 typedef struct{
 	unsigned char val[4];
 }nombre32bits;
@@ -42,7 +48,7 @@ nombre32bits* valueToNombre32bits (uint32_t n);
 uint32_t nombre32bitsToValue(nombre32bits *bytes);
 void printNombre32bits (nombre32bits *bytes);
 void testerror(error er);
-int* getInfo(block * b);
+int* getInfo(disk_id disk);
 int firstblockPositionOfPartition(int nbPartition, disk_id disk);
 
 void printBlock(block * block);

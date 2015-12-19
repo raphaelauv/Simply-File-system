@@ -7,16 +7,13 @@ void testerror(error er) {
 
 	}
 }
+
+/// return the first block of a partition on the TFS , -1 if its impossible
 int firstblockPositionOfPartition(int nbPartition, disk_id disk) {
-	error er;
-	block *b;
-	b = initBlock();
-	er = read_block(disk, *b, 0);
-	testerror(er);
 
 
 	int * array;
-	array = getInfo(b);
+	array = getInfo(disk);
 	int nbRealPartitions = array[1];
 
 	if (nbPartition >= nbRealPartitions) {
@@ -28,11 +25,11 @@ int firstblockPositionOfPartition(int nbPartition, disk_id disk) {
 		tailleBefore=tailleBefore+array[i + 1];
 	}
 
-	freeBlock(b);
-
 	return tailleBefore;
 
 }
+
+/// Return the size of the n partition
 int getSizePartition(int n,disk_id disk){
 
 	error er;
@@ -56,16 +53,23 @@ int getSizePartition(int n,disk_id disk){
 	return sizePartition;
 }
 
-int* getInfo(block * b) {
-	/*
-	 the size of array is array[2]+5
-	 size of drive
-	 nb of partitions
-	 size of the i partition
-	 addition of the size of all partitions
-	 size availlable on drive
-	 nb of maximum partition possible
-	 */
+/// return a tab with the information of the first block of the TFS
+/*
+ the size of array is array[2]+5
+ size of drive
+ nb of partitions
+ size of the i partition
+ addition of the size of all partitions
+ size availlable on drive
+ nb of maximum partition possible
+ */
+int* getInfo(disk_id disk) {
+	error er;
+	block *b;
+	b = initBlock();
+	er = read_block(disk, *b, 0);
+	testerror(er);
+
 	int nbParitionActual = nombre32bitsToValue(b->valeur[1]);
 	int *array=malloc(5 + nbParitionActual);
 	array[0] = nombre32bitsToValue(b->valeur[0]); //size of drive
@@ -90,6 +94,9 @@ int* getInfo(block * b) {
 	} else {
 		array[4 + nbParitionActual] = max - nbParitionActual;
 	}
+
+	freeBlock(b);
+
 	return array;
 }
 
