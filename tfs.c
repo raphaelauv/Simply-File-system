@@ -26,7 +26,7 @@ descriptionBlock* initDescriptionBlock(partition p) {
 
 }
 
-error putBlockInFreeBlockList(partition p, descriptionBlock * dB,uint32_t numberBlock) {
+error putBlockInFreeBlockList(partition p,descriptionBlock * dB,uint32_t numberBlock) {
 
 	error er;
 	uint32_t old = dB->volumeFistFreeBlock;
@@ -56,7 +56,74 @@ error putBlockInFreeBlockList(partition p, descriptionBlock * dB,uint32_t number
 	testerror(er);
 
 	freeBlock(b);
+	er.val=0;
+	er.message="block add at first with succes";
 
+	return er;
+}
+
+error removeBlockOfFreeBlockListe(partition p,descriptionBlock * dB,uint32_t numberBlock){
+	error er;
+
+	uint32_t tmp = dB->volumeFistFreeBlock;
+
+
+	if (tmp == 0) {
+		er.val=1;
+		er.message="list of free block is empty";
+		return er;
+	}
+	if(numberBlock==tmp){
+		//deletion of the first element of the list , the list is now empty
+		dB->volumeFistFreeBlock=0;
+		er.val=0;
+		return er;
+
+	}
+	block * b;
+	b = initBlock();
+	er = readBlockOfPartition(p, *b, tmp);
+	testerror(er);
+
+	uint32_t tmp2=nombre32bitsToValue(b->valeur[TFS_VOLUME_BLOCK_SIZE - 1]);
+
+	while(tmp2!=numberBlock){
+		er = readBlockOfPartition(p, *b, tmp2);
+		testerror(er);
+		tmp=tmp2;
+
+		tmp2=nombre32bitsToValue(b->valeur[TFS_VOLUME_BLOCK_SIZE - 1]);
+		if(tmp==tmp2){
+			er.message="block not found in the list of free block";
+			er.val=1;
+			return er;
+		}
+	}
+
+	er = readBlockOfPartition(p, *b, tmp2);
+	testerror(er);
+	uint32_t tmp3=nombre32bitsToValue(b->valeur[TFS_VOLUME_BLOCK_SIZE - 1]);
+
+
+	er = readBlockOfPartition(p, *b, tmp);
+	testerror(er);
+
+
+	// deletion of the last element of the list
+	if(tmp3==tmp2){
+		b->valeur[TFS_VOLUME_BLOCK_SIZE - 1] = valueToNombre32bits(tmp);
+		writeBlockOfPartition(p,*b,tmp);
+	}
+
+	// the block n is at the middle of 2 blocks , n-1 is connect to n+1
+	else{
+		b->valeur[TFS_VOLUME_BLOCK_SIZE - 1] = valueToNombre32bits(tmp3);
+		writeBlockOfPartition(p,*b,tmp);
+
+	}
+	freeBlock(b);
+	er.val=0;
+	er.message="block delete with succes";
 	return er;
 }
 
