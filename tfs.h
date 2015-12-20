@@ -24,10 +24,12 @@ typedef struct {
 	int tfs_indirect1;
 	int tfs_indirect2;
 	int tfs_next_free;
-}fileTab;
+}file;
 
 
-#define TTTFS_SIZE_OF_KEY_IN_FILE_TABLE 16 // there is 16 int for 1 entrance in the file table
+#define TTTFS_NUMBER_OF_INT_IN_KEY_OF_FILE_TABLE 16 // there is 16 int for 1 entrance in the file table
+#define TTTFS_NUMBER_OF_FILE_IN_ONE_BLOCK TFS_VOLUME_BLOCK_SIZE/TTTFS_NUMBER_OF_INT_IN_KEY_OF_FILE_TABLE //  1024/16 =64
+
 
 #define TTTFS_MAGIC_NUMBER 827541076
 #define TTTFS_VOLUME_BLOCK_SIZE TFS_VOLUME_BLOCK_SIZE
