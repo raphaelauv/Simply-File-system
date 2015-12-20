@@ -2,6 +2,7 @@
 
 int main(int argc, char *argv[]) {
 
+
 	if (argc < 5 || argc > 6 || strcmp(argv[1], "-p") != 0
 			|| strcmp(argv[3], "-mf") != 0) {
 		printf("ERREUR WITH ARGUMENTS");
