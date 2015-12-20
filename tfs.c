@@ -1,16 +1,44 @@
 #include "tfs.h"
 
-//return the file number nbFile of the FileTab
-file* getFile_Of_FileTab(partition p,uint32_t nbFile){
-	uint32_t blockNumber;
-	uint32_t positionInBlock;
+uint32_t getblockNumber_Of_File(uint32_t nbFile){
+
+	if(nbFile<1){
+			error er;
+			er.val=1;
+			er.message="in getblockNumber_Of_File the value of nbFile is <1 ";
+			testerror(er);
+		}
+
 	if(nbFile<TTTFS_NUMBER_OF_FILE_IN_ONE_BLOCK){
-		blockNumber=0;
-		positionInBlock=nbFile;
-	}else{
-		uint32_t blockNumber=nbFile% TTTFS_NUMBER_OF_FILE_IN_ONE_BLOCK;
-		positionInBlock = nbFile - (blockNumber*TTTFS_NUMBER_OF_FILE_IN_ONE_BLOCK);
+			return 1;//1 because at 0 it is the description block
+		}else{
+			return (nbFile% TTTFS_NUMBER_OF_FILE_IN_ONE_BLOCK)+1;
+		}
+}
+
+uint32_t positionInBlock_Of_File(uint32_t nbFile ,uint32_t blockNumber){
+	if(blockNumber<1){
+		error er;
+		er.val=1;
+		er.message="in positionInBlock_Of_File the value of blockNumber is negative or 0";
+		testerror(er);
 	}
+	if(blockNumber==1){
+		return nbFile;
+	}
+	else{
+		return nbFile - ((blockNumber-1)*TTTFS_NUMBER_OF_FILE_IN_ONE_BLOCK);
+	}
+
+}
+error setTfs_next_freeOfFile(partition p,uint32_t nbFile){
+	error er;
+	return er;
+}
+//return the file n of the FileTab
+file* getFile_Of_FileTab(partition p,uint32_t nbFile){
+	uint32_t blockNumber=getblockNumber_Of_File(nbFile);
+	uint32_t positionInBlock=positionInBlock_Of_File (nbFile , blockNumber);
 
 	error er;
 
