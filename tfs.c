@@ -1,5 +1,45 @@
 #include "tfs.h"
 
+//return the file number nbFile of the FileTab
+file* getFile_Of_FileTab(partition p,uint32_t nbFile){
+	uint32_t blockNumber;
+	uint32_t positionInBlock;
+	if(nbFile<TTTFS_NUMBER_OF_FILE_IN_ONE_BLOCK){
+		blockNumber=0;
+		positionInBlock=nbFile;
+	}else{
+		uint32_t blockNumber=nbFile% TTTFS_NUMBER_OF_FILE_IN_ONE_BLOCK;
+		positionInBlock = nbFile - (blockNumber*TTTFS_NUMBER_OF_FILE_IN_ONE_BLOCK);
+	}
+
+	error er;
+
+	block * b;
+	b = initBlock();
+	readBlockOfPartition(p,*b,blockNumber);
+	testerror(er);
+
+	file * file=malloc(sizeof(file));
+
+	file->tfs_size=nombre32bitsToValue(b->valeur[positionInBlock]);
+	file->tfs_type=nombre32bitsToValue(b->valeur[positionInBlock+1]);
+	file->tfs_subtype=nombre32bitsToValue(b->valeur[positionInBlock+2]);
+
+	//3 to 12
+	int i;
+	for(i=0;i<10;i++){
+		file->tfs_direct[i]=nombre32bitsToValue(b->valeur[positionInBlock+3+i]);
+	}
+
+	file->tfs_indirect1=nombre32bitsToValue(b->valeur[positionInBlock+13]);
+	file->tfs_indirect2=nombre32bitsToValue(b->valeur[positionInBlock+14]);
+	file->tfs_next_free=nombre32bitsToValue(b->valeur[positionInBlock+15]);
+
+	freeBlock(b);
+	return file;
+}
+
+//read the numberBlock block of the p partition
 error readBlockOfPartition(partition p, block b, uint32_t numberBlock) {
 	error er;
 
@@ -10,6 +50,7 @@ error readBlockOfPartition(partition p, block b, uint32_t numberBlock) {
 
 }
 
+//write the numberBlock block of the p partition
 error writeBlockOfPartition(partition p, block b, uint32_t numberBlock) {
 	error er;
 
