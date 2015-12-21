@@ -29,6 +29,9 @@ typedef struct {
 #define FLAG_BLOCK 1
 #define FLAG_FILE 2
 
+#define FLAG_DELETE_SECURE 1
+#define FLAG_DELETE_SIMPLE 1
+
 #define TTTFS_NUMBER_OF_INT_IN_KEY_OF_FILE_TABLE 16 // there is 16 int for 1 entrance in the file table
 #define TTTFS_NUMBER_OF_FILE_IN_ONE_BLOCK TFS_VOLUME_BLOCK_SIZE/TTTFS_NUMBER_OF_INT_IN_KEY_OF_FILE_TABLE //  1024/16 =64
 
