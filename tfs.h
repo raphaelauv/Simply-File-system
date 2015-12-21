@@ -48,8 +48,8 @@ error getDescriptionBlock(partition p, descriptionBlock* dB);
 error writeDescriptionBlock(partition p,descriptionBlock* dB);
 
 
-error putThingInFreeList(partition p, descriptionBlock * dB,uint32_t numberOfValueToAdd, int FLAG);
-error removeThingOfFreeListe(partition p,descriptionBlock * dB,uint32_t numberOfValueToAdd , int FLAG);
+error add_OF_FLAG_FreeListe(partition p, uint32_t numberOfValueToAdd, int FLAG);
+uint32_t remove_OF_FLAG_FreeListe(partition p, int FLAG);
 
 error getFile_Of_FileTab(partition p,uint32_t nbFile,file* file);
 error writeFile_Of_FileTab(partition p,uint32_t nbFile,file* file);
