@@ -38,17 +38,16 @@ int getSizePartition(int n,disk_id disk){
 	er = read_block(disk, *b, 0);
 	testerror(er);
 
-	if(n<1 || n> nombre32bitsToValue(b->valeur[1]) ){
+	if(n<0 || n> nombre32bitsToValue(b->valeur[1]) ){
 		error er;
 		er.val=1;
 		er.message="Error in the n argument of getSizePartition";
 		testerror(er);
 	}
 
-	int sizePartition=nombre32bitsToValue(b->valeur[n+1]);
+	int sizePartition=nombre32bitsToValue(b->valeur[n+2]);
 
-	//???
-	//freeBlock(b);
+	freeBlock(b);
 
 	return sizePartition;
 }
@@ -137,7 +136,7 @@ void printNombre32bits(nombre32bits *bytes) {
 void printBlock(block * block) {
 
 	int i;
-	for (i = 0; i < 256; i++) {
+	for (i = 0; i < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; i++) {
 		if (block->valeur[i] == NULL) {
 			//	printf("null\n");
 			return;
@@ -204,7 +203,7 @@ nombre32bits* valueToNombre32bits(uint32_t n) {
 block* initBlock() {
 	block *block = malloc(sizeof(*block));
 	int i;
-	for (i = 0; i < 256; i++) {
+	for (i = 0; i < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; i++) {
 		block->valeur[i] = malloc(sizeof(nombre32bits));
 		block->valeur[i] = valueToNombre32bits(0);
 	}
@@ -214,7 +213,7 @@ block* initBlock() {
 
 void freeBlock(block* block) {
 	int i;
-	for (i = 0; i < 256; i++) {
+	for (i = 0; i < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; i++) {
 		free(block->valeur[i]);
 	}
 	free(block);
@@ -232,15 +231,15 @@ error static read_physical_block(disk_id id, block b, uint32_t num) {
 	rewind(id.fichier);
 	printf("revenu a zero\n");
 	*/
-	num=num*1024;
+	num=num*TFS_VOLUME_BLOCK_SIZE;
 	fseek(id.fichier, num, SEEK_SET);
 	//printf("en position : %d\n", num);
 	int i;
 	int ecris;
-	for (i = 0; i < 256; i++) {
-		ecris = fread((b.valeur[i]), 1, 4, id.fichier);
+	for (i = 0; i < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; i++) {
+		ecris = fread((b.valeur[i]), 1, TFS_VOLUME_DIVISION_OCTAL, id.fichier);
 		//printNombre32bits(b.valeur[i]);
-		if (ecris != 4) {
+		if (ecris != TFS_VOLUME_DIVISION_OCTAL) {
 			er.val = 1;
 			er.message = "error during write_physical_block in file";
 		}
@@ -252,19 +251,19 @@ error static read_physical_block(disk_id id, block b, uint32_t num) {
 error static write_physical_block(disk_id id, block b, uint32_t num) {
 	int i;
 	int ecris;
-	num=num*1024;
+	num=num*TFS_VOLUME_BLOCK_SIZE;
 	fseek(id.fichier, num, SEEK_SET);
 	error er;
 
-	for (i = 0; i < 256; i++) {
+	for (i = 0; i < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; i++) {
 
 		if (b.valeur[i] == NULL) {
 			printf("null\n");
 			b.valeur[i] = valueToNombre32bits(0);
 		}
 		//printNombre32bits(b.valeur[i]);
-		ecris = fwrite(b.valeur[i], 1, 4, id.fichier);
-		if (ecris != 4) {
+		ecris = fwrite(b.valeur[i], 1, TFS_VOLUME_DIVISION_OCTAL, id.fichier);
+		if (ecris != TFS_VOLUME_DIVISION_OCTAL) {
 			er.val = 1;
 			er.message = "error during write_physical_block in file";
 		}

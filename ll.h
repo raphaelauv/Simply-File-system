@@ -7,6 +7,8 @@
 
 
 #define TFS_VOLUME_BLOCK_SIZE 1024
+#define TFS_VOLUME_DIVISION_OCTAL 4
+#define TFS_VOLUME_NUMBER_VALUE_BY_BLOCK   TFS_VOLUME_BLOCK_SIZE/TFS_VOLUME_DIVISION_OCTAL //256
 
 typedef struct {
     int val;
@@ -25,12 +27,12 @@ typedef struct {
 
 
 typedef struct{
-	unsigned char val[4];
+	unsigned char val[TFS_VOLUME_DIVISION_OCTAL];
 }nombre32bits;
 
 
 typedef struct {
-	nombre32bits* valeur[TFS_VOLUME_BLOCK_SIZE/4];
+	nombre32bits* valeur[TFS_VOLUME_NUMBER_VALUE_BY_BLOCK];
 } block;
 
 

@@ -12,15 +12,11 @@ int main(int argc, char *argv[]) {
 
 	disk_id *disk = malloc(sizeof(*disk));
 	error er;
-	block *b;
-	b=initBlock();
 	er = start_disk(nameFile, disk);
-	testerror(er);
-	er = read_block(*disk, *b, 0);
 	testerror(er);
 
 	int * array;
-	array=getInfo(b);
+	array=getInfo(*disk);
 
 	if(array[0]==0){
 		er.val=1;
@@ -43,7 +39,6 @@ int main(int argc, char *argv[]) {
 
 	er = stop_disk(*disk);
 		testerror(er);
-		freeBlock(b);
 		freeDisk(disk);
 	return 0;
 }

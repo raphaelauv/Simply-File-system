@@ -3,12 +3,20 @@
 #include <stdlib.h>
 #include "ll.h"
 
+
+#define DIRECT_TAB 10
+
+// the numerotation of file start at 1 to the max count file of the user
+
+// the numerotation of block start at 0 in every partition , the block 0 is the TTTFS Description Block
+
 typedef struct {
 } DIR;
 
 typedef struct {
 	int magic;
 	int volumeBlockSize;
+	int volumeBlockCount;
 	int volumeFreeBlockNb;
 	int volumeFirstFreeBlock;
 	int volumeMaxFile;
@@ -20,7 +28,7 @@ typedef struct {
 	int tfs_size;
 	int tfs_type;
 	int tfs_subtype;
-	int tfs_direct[10];
+	int tfs_direct[DIRECT_TAB];
 	int tfs_indirect1;
 	int tfs_indirect2;
 	int tfs_next_free;
@@ -34,6 +42,16 @@ typedef struct {
 
 #define TTTFS_NUMBER_OF_INT_IN_KEY_OF_FILE_TABLE 16 // there is 16 int for 1 entrance in the file table
 #define TTTFS_NUMBER_OF_FILE_IN_ONE_BLOCK TFS_VOLUME_BLOCK_SIZE/TTTFS_NUMBER_OF_INT_IN_KEY_OF_FILE_TABLE //  1024/16 =64
+
+
+//only for tfs.h
+#define TFS_V_N_V_B_B_2 TFS_VOLUME_NUMBER_VALUE_BY_BLOCK*TFS_VOLUME_NUMBER_VALUE_BY_BLOCK //256*256
+#define TFS_V_N_V_B_B_3 TFS_V_N_V_B_B_2 * TFS_VOLUME_NUMBER_VALUE_BY_BLOCK // 256*256*256
+
+
+#define DIRECT_MAX_SIZE 	DIRECT_TAB * TFS_VOLUME_NUMBER_VALUE_BY_BLOCK // 10*256 = 2560
+#define INDIRECT_1_MAX_SIZE DIRECT_MAX_SIZE + TFS_V_N_V_B_B_2//2560 + 256*256 = 68096
+#define INDIRECT_2_MAX_SIZE INDIRECT_1_MAX_SIZE + TFS_V_N_V_B_B_3 // 68096 +256*256*256 = 16845312
 
 
 #define TTTFS_MAGIC_NUMBER 827541076
@@ -54,7 +72,7 @@ error writeDescriptionBlock(partition p,descriptionBlock* dB);
 error add_OF_FLAG_FreeListe(partition p, uint32_t numberOfValueToAdd, int FLAG);
 uint32_t remove_OF_FLAG_FreeListe(partition p, int FLAG);
 
-error getFile_Of_FileTab(partition p,uint32_t nbFile,file* file);
+file* getFile_Of_FileTab(partition p,uint32_t nbFile);
 error writeFile_Of_FileTab(partition p,uint32_t nbFile,file* file);
 
 uint32_t getblockNumber_Of_File(uint32_t nbFile);
