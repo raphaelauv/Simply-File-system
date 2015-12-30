@@ -146,6 +146,42 @@ void printBlock(block * block) {
 
 }
 
+int charToInt(char a){
+	return (int)a;
+}
+
+
+
+
+nombre32bits* fourCharToNombre32bits(int a, int b, int c, int d) {
+
+	nombre32bits * bytes;
+	bytes = malloc(sizeof(*bytes));
+	if(bytes==NULL){
+		error er;
+		er.val=1;
+		er.message="error in malloc fourCharToNombre32bits";
+		testerror(er);
+	}
+
+	/*
+	if (check_for_endianness() == 0) {
+*/
+		bytes->val[0] = a;
+		bytes->val[1] = b;
+		bytes->val[2] = c;
+		bytes->val[3] = d;
+/*
+	} else {
+		printf("dans endianes char\n");
+		bytes->val[3] = a;
+		bytes->val[2] = b;
+		bytes->val[1] = c;
+		bytes->val[0] = d;
+	}*/
+	return bytes;
+}
+
 uint32_t nombre32bitsToValue(nombre32bits *bytes) {
 	//maximum value : FFFFFFFF -> 4294967295;
 
@@ -158,14 +194,14 @@ uint32_t nombre32bitsToValue(nombre32bits *bytes) {
 
 		number1 = (bytes->val[0]) << 24;
 		number2 = (bytes->val[1]) << 16;
-		number3 = bytes->val[2] << 8;
-		number4 = bytes->val[0];
+		number3 = (bytes->val[2]) << 8;
+		number4 = bytes->val[3];
 
 	} else {
 
 		number1 = (bytes->val[3]) << 24;
 		number2 = (bytes->val[2]) << 16;
-		number3 = bytes->val[1] << 8;
+		number3 = (bytes->val[1]) << 8;
 		number4 = bytes->val[0];
 
 	}

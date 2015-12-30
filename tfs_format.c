@@ -34,10 +34,10 @@ int main(int argc, char *argv[]) {
 	char* nameFile;
 	if (argc != 6) {
 		nameFile = "disk.tfs";
-		printf("name NOT give , we search for disk.tfs\n");
+		//printf("name NOT give , we search for disk.tfs\n");
 	} else {
 		nameFile = argv[argc - 1];
-		printf("name give : %s\n", nameFile);
+		//printf("name give : %s\n", nameFile);
 	}
 
 	/**
@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
 		er.message="The partition selected do not exist in the tfs";
 		testerror(er);
 	}
-	printf("position : %d\n",positionFirstBlock);
+	//printf("position : %d\n",positionFirstBlock);
 
 	partition *p=malloc(sizeof(partition));
 	p->disque=disk;
@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
 	int sizePartition=getSizePartition(nbPartition,*disk);
 	int nbFreeBlock =sizePartition-1;
 
-	printf("size partition ask : %d\n",sizePartition);
+	//printf("size partition ask : %d\n",sizePartition);
 	b->valeur[2] = valueToNombre32bits(sizePartition);
 
 
@@ -87,50 +87,58 @@ int main(int argc, char *argv[]) {
 
 	if(nbOfBlockForFileTab<1){ nbOfBlockForFileTab=1;}
 
-	printf("\n nb of block for file tab : %d\n",nbOfBlockForFileTab);
-	if(nbFreeBlock-(nbOfBlockForFileTab+file_count)<0){
+	//printf("\n nb of block for file tab : %d\n",nbOfBlockForFileTab);
 
-		printf("value tested : %d\n",nbFreeBlock-(nbOfBlockForFileTab+file_count));
+	//+1 is the root folder undeletable
+	if(nbFreeBlock-(nbOfBlockForFileTab+file_count+1)<0){
 		fprintf(stderr, "\n-mf file_count argument,"
 						" the number of maximum files enter :  %d  is NOT CORRECT \n"
-						"because is bigger than what is possible even if all files have the minimun size\n"
-						"you can at maxmimum have %d files in this partition",file_count,
-						nbFreeBlock-nbOfBlockForFileTab);
-				return 1;
-
+						"because is bigger than what is possible even, if all files have the minimun size.\n"
+						"The maxmimum is %d files in this partition\n",file_count,
+						nbFreeBlock-(nbOfBlockForFileTab+1));
+		return 1;
 	}
-	printf("val de file count : %d \n", file_count);
+	//printf("val de file count : %d \n", file_count);
+
+	//-1 because of the root
 	b->valeur[5] = valueToNombre32bits(file_count);
 
-	writeBlockOfPartition(*p,*b,0);
-
-
+	er=writeBlockOfPartition(*p,*b,0);
+	testerror(er);
 
 	/**
 	 * TTTFS File Table
-*/
+	 */
+
+	file_count=file_count+1;// to add the ROOT undelable
+
 
 	int i;
 
 	for(i=file_count-1; i>-1 ; i--){
-		printf("file i : %d\n",i);
+		printf("add file \n");
 		er=add_OF_FLAG_FreeListe(*p,i,FLAG_FILE);
 		testerror(er);
 	}
 
 	/**
 	 * TTTFS Data blocks & Free Blocks Chain
+	*/
 
 
 	int j;
 
 	int limit = nbOfBlockForFileTab;
 	for(j=sizePartition-1;j>limit;j--){
+		printf("add block \n");
 		er=add_OF_FLAG_FreeListe(*p,j,FLAG_BLOCK);
 		testerror(er);
 	}
 
-*/
+	int first;
+	first=createEmptyFolder(*p,0);
+	printf("valeur de first , the root %d \n", first);
+
 	printf("fini");
 
 	return 0;
