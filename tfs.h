@@ -5,6 +5,7 @@
 
 
 #define DIRECT_TAB 10
+#define SIZE_MAX_NAME_FOLDER 28
 
 // the numerotation of file start at 1 to the max count file of the user
 
@@ -14,25 +15,30 @@ typedef struct {
 } DIR;
 
 typedef struct {
-	int magic;
-	int volumeBlockSize;
-	int volumeBlockCount;
-	int volumeFreeBlockNb;
-	int volumeFirstFreeBlock;
-	int volumeMaxFile;
-	int volumeFreeFileNb;
-	int volumeFirstFreeFile;
+	uint32_t magic;
+	uint32_t volumeBlockSize;
+	uint32_t volumeBlockCount;
+	uint32_t volumeFreeBlockNb;
+	uint32_t volumeFirstFreeBlock;
+	uint32_t volumeMaxFile;
+	uint32_t volumeFreeFileNb;
+	uint32_t volumeFirstFreeFile;
 }descriptionBlock;
 
 typedef struct {
-	int tfs_size;
-	int tfs_type;
-	int tfs_subtype;
-	int tfs_direct[DIRECT_TAB];
-	int tfs_indirect1;
-	int tfs_indirect2;
-	int tfs_next_free;
+	uint32_t tfs_size;
+	uint32_t tfs_type;
+	uint32_t tfs_subtype;
+	uint32_t tfs_direct[DIRECT_TAB];
+	uint32_t tfs_indirect1;
+	uint32_t tfs_indirect2;
+	uint32_t tfs_next_free;
+	uint32_t nbFile;
 }file;
+
+
+#define SIZE_FOLDER_ENTRANCE 8
+#define ASCII_FOR_POINT 46
 
 #define FLAG_BLOCK 1
 #define FLAG_FILE 2
@@ -73,15 +79,18 @@ error add_OF_FLAG_FreeListe(partition p, uint32_t numberOfValueToAdd, int FLAG);
 uint32_t remove_OF_FLAG_FreeListe(partition p, int FLAG);
 
 file* getFile_Of_FileTab(partition p,uint32_t nbFile);
-error writeFile_Of_FileTab(partition p,uint32_t nbFile,file* file);
+error writeFile_Of_FileTab(partition p,file* file);
 
 uint32_t getblockNumber_Of_File(uint32_t nbFile);
 uint32_t positionInBlock_Of_File(uint32_t nbFile ,uint32_t blockNumber);
 
 
+int createEmptyFolder(partition p, uint32_t parentFolder);
+
 
 file* initFile();
 descriptionBlock* initDescriptionBlock();
+
 
 int tfs_mkdir(const char *path, mode_t mode);
 int tfs_rmdir(const char *path);
