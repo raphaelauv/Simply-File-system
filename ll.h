@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <string.h>
 
+#define TFS_MAX_NUMBER_OF_PARTITION TFS_VOLUME_NUMBER_VALUE_BY_BLOCK-2 //253
 
 #define TFS_VOLUME_BLOCK_SIZE 1024
 #define TFS_VOLUME_DIVISION_OCTAL 4

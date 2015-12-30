@@ -3,6 +3,12 @@
 int main(int argc, char *argv[]) {
 
 
+
+	/********************************************************/
+	/**
+	 * TEST OF ARGUMENTS
+	 */
+
 	if (argc < 5 || argc > 6 || strcmp(argv[1], "-p") != 0
 			|| strcmp(argv[3], "-mf") != 0) {
 		printf("ERREUR WITH ARGUMENTS");
@@ -28,7 +34,6 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	//printf("partition demande %d \n",nbPartition);
 	disk_id *disk = malloc(sizeof(*disk));
 	error er;
 	char* nameFile;
@@ -40,6 +45,8 @@ int main(int argc, char *argv[]) {
 		//printf("name give : %s\n", nameFile);
 	}
 
+
+	/********************************************************/
 	/**
 	 * TTTFS Description Block
 	 */
@@ -79,7 +86,7 @@ int main(int argc, char *argv[]) {
 	//printf("size partition ask : %d\n",sizePartition);
 	b->valeur[2] = valueToNombre32bits(sizePartition);
 
-
+	/********************************************************/
 	/** MAX FILE
 	 *
 	 */
@@ -89,7 +96,7 @@ int main(int argc, char *argv[]) {
 
 	//printf("\n nb of block for file tab : %d\n",nbOfBlockForFileTab);
 
-	//+1 is the root folder undeletable
+	//+1 is the root folder un-delatable
 	if(nbFreeBlock-(nbOfBlockForFileTab+file_count+1)<0){
 		fprintf(stderr, "\n-mf file_count argument,"
 						" the number of maximum files enter :  %d  is NOT CORRECT \n"
@@ -103,14 +110,20 @@ int main(int argc, char *argv[]) {
 	//-1 because of the root
 	b->valeur[5] = valueToNombre32bits(file_count);
 
+	/********************************************************/
+	/**
+	 * WRITE BLOCK OF DESCRIPTION
+	 */
+
 	er=writeBlockOfPartition(*p,*b,0);
 	testerror(er);
 
+	/********************************************************/
 	/**
 	 * TTTFS File Table
 	 */
 
-	file_count=file_count+1;// to add the ROOT undelable
+	file_count=file_count+1;// to add the ROOT un-delatable
 
 
 	int i;
@@ -120,11 +133,10 @@ int main(int argc, char *argv[]) {
 		er=add_OF_FLAG_FreeListe(*p,i,FLAG_FILE);
 		testerror(er);
 	}
-
+	/********************************************************/
 	/**
 	 * TTTFS Data blocks & Free Blocks Chain
 	*/
-
 
 	int j;
 
@@ -134,13 +146,23 @@ int main(int argc, char *argv[]) {
 		er=add_OF_FLAG_FreeListe(*p,j,FLAG_BLOCK);
 		testerror(er);
 	}
+	/********************************************************/
+	/**
+	 * CREATE THE ROOT
+	 */
+	createEmptyFolder(*p,0);
 
-	int first;
-	first=createEmptyFolder(*p,0);
-	printf("valeur de first , the root %d \n", first);
+	/********************************************************/
+	/**
+	 * FREE MEMORY
+	 */
+	freeBlock(b);
+	freeDisk(disk);
+	free(p);
 
-	printf("fini");
+
 
 	return 0;
+
 }
 
