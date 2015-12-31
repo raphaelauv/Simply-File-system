@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
 	int i;
 
 	for(i=file_count-1; i>-1 ; i--){
-		printf("add file \n");
+
 		er=add_OF_FLAG_FreeListe(*p,i,FLAG_FILE);
 		testerror(er);
 	}
@@ -142,7 +142,7 @@ int main(int argc, char *argv[]) {
 
 	int limit = nbOfBlockForFileTab;
 	for(j=sizePartition-1;j>limit;j--){
-		printf("add block \n");
+
 		er=add_OF_FLAG_FreeListe(*p,j,FLAG_BLOCK);
 		testerror(er);
 	}
@@ -150,7 +150,13 @@ int main(int argc, char *argv[]) {
 	/**
 	 * CREATE THE ROOT
 	 */
-	createEmptyFolder(*p,0);
+
+	int result=createEmptyEntry(*p,0,FLAG_ENTRY_FOLDER);
+	if(result==-1){
+		er.val=1;
+		er.message="error at creation of root folder , you should retry tfs_format";
+		testerror(er);
+	}
 
 	/********************************************************/
 	/**
@@ -160,6 +166,7 @@ int main(int argc, char *argv[]) {
 	freeDisk(disk);
 	free(p);
 
+	printf("SUCCES -> Format of %s\n",nameFile);
 
 
 	return 0;

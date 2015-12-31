@@ -129,27 +129,53 @@ error writeFile_Of_FileTab(partition p, file* file) {
 	return er;
 }
 
-//FLAG_DELETE_SECURE
-error cleanBlock(partition p, uint32_t nbBlock) {
+/********************************************************/
+/**
+ * DELETE RECURSIVLY FILES IN BLOCK IF IT IS A FOLDER
+ * ADD FREE FILE TO FREE FILE LIST
+ * ADD FREE BLOCK TO FREE BLOCK LIST
+ * DELETE WITH SECURITY IF FLAG SECURE IS FLAG DELETE SECURE
+ */
+error cleanBlock(partition p, uint32_t nbBlock , int FLAG,int FLAG_SECURE) {
+
+	error er;
+
 	block * b;
 	b = initBlock();
-	error er;
-	er = writeBlockOfPartition(p, *b, nbBlock);
-	return er;
 
-}
+	if(FLAG==FLAG_ENTRY_FOLDER){
+		er=readBlockOfPartition(p,*b,nbBlock);
+		int i;
+		for(i=0;i<TFS_VOLUME_BLOCK_SIZE;i=i+SIZE_ENTRY_IN_FOLDER){
 
-void delete_File_Direct(partition p, uint32_t nbBlock, int FLAG) {
-	error er;
-	if (FLAG == FLAG_DELETE_SECURE) {
-		er = cleanBlock(p, nbBlock);
+			if(b->valeur[i]!=0){
+				deleteEntry(p,b->valeur[i],FLAG_SECURE,DELETE_FOLDER);
+				er=add_OF_FLAG_FreeListe(p,b->valeur[i],FLAG_FILE);
+				testerror(er);
+			}
+		}
+	}
+
+	if(FLAG_SECURE==FLAG_DELETE_SECURE){
+
+		er = writeBlockOfPartition(p, *b, nbBlock);
 		testerror(er);
 	}
+	er=add_OF_FLAG_FreeListe(p,nbBlock,FLAG_BLOCK);
+	testerror(er);
+	freeBlock(b);
+}
+
+void delete_File_Direct(partition p, uint32_t nbBlock, int FLAG, int FLAG_SECURE) {
+	error er;
+
+	er = cleanBlock(p, nbBlock, FLAG,FLAG_SECURE);
+	testerror(er);
 	er = add_OF_FLAG_FreeListe(p, nbBlock, FLAG_BLOCK);
 	testerror(er);
 }
 
-void delete_File_Indirect1(partition p, uint32_t nbBlock, int FLAG) {
+void delete_File_Indirect1(partition p, uint32_t nbBlock,int FLAG, int FLAG_SECURE) {
 	error er;
 	block *b;
 	b = initBlock();
@@ -162,12 +188,13 @@ void delete_File_Indirect1(partition p, uint32_t nbBlock, int FLAG) {
 	for (i = 0; i < TFS_VOLUME_BLOCK_SIZE - 1; i++) {
 		tmp = nombre32bitsToValue(b->valeur[i]);
 		if (tmp != 0) {
-			delete_File_Direct(p, tmp, FLAG);
+			delete_File_Direct(p, tmp, FLAG , FLAG_SECURE);
 		}
 	}
+	freeBlock(b);
 
 }
-void delete_File_Indirect2(partition p, uint32_t nbBlock, int FLAG) {
+void delete_File_Indirect2(partition p, uint32_t nbBlock, int FLAG, int FLAG_SECURE) {
 	error er;
 	block *b;
 	b = initBlock();
@@ -180,47 +207,63 @@ void delete_File_Indirect2(partition p, uint32_t nbBlock, int FLAG) {
 	for (i = 0; i < TFS_VOLUME_BLOCK_SIZE - 1; i++) {
 		tmp = nombre32bitsToValue(b->valeur[i]);
 		if (tmp != 0) {
-			delete_File_Indirect1(p, tmp, FLAG);
+			delete_File_Indirect1(p, tmp, FLAG, FLAG_SECURE);
 		}
 	}
 
+	freeBlock(b);
 }
 
-error deleteFile(partition p, uint32_t nbFile, int FLAG) {
+error deleteEntry(partition p, uint32_t nbFile, int FLAG_SECURE , int FOLDER_OPTION) {
 
+	int FLAG;
 	file * file;
 	error er;
 	file = getFile_Of_FileTab(p, nbFile);
 	testerror(er);
+	//file->tfs_size = 0;
+	if(file->tfs_type == 0){
+		FLAG=FLAG_ENTRY_FILE;
+	}
+	else if(file->tfs_type == 1 && FOLDER_OPTION==DELETE_FOLDER){
+		FLAG=FLAG_ENTRY_FOLDER;
+	}
 
-	if (file->tfs_size == 0) {
-		er.val = 1;
-		er.message = "IMPOSSIBLE to delete  a free file";
+	else{
+		er.val=1;
+		er.message="Impossible to delete a folder without option FOLDER";
+	}
+	if( (FLAG==FLAG_ENTRY_FILE && file->tfs_type!=0)
+			|| (FLAG ==FLAG_ENTRY_FOLDER && file->tfs_type!=1)){
+
+		er.val=1;
+		er.message="error in FLAG selected in deleteEntry";
 		return er;
 	}
-	file->tfs_size = 0;
-	file->tfs_type = 0;
-	file->tfs_subtype = 0;
+	//file->tfs_subtype = 0;
 
 	int i;
 	for (i = 0; i < DIRECT_TAB; i++) {
 		if (file->tfs_direct[i] != 0) {
-			delete_File_Direct(p, file->tfs_direct[i], FLAG);
+			delete_File_Direct(p, file->tfs_direct[i],FLAG, FLAG_SECURE);
 		}
-		file->tfs_direct[i] = 0;
+		//file->tfs_direct[i] = 0;
 	}
 	if (file->tfs_indirect1 != 0) {
-		delete_File_Indirect1(p, file->tfs_indirect1, FLAG);
-		file->tfs_indirect1 = 0;
+		delete_File_Indirect1(p, file->tfs_indirect1,FLAG, FLAG_SECURE);
+		//file->tfs_indirect1 = 0;
 	}
 
 	if (file->tfs_indirect2 != 0) {
-		delete_File_Indirect2(p, file->tfs_indirect2, FLAG);
-		file->tfs_indirect2 = 0;
+		delete_File_Indirect2(p, file->tfs_indirect2,FLAG, FLAG_SECURE);
+		//file->tfs_indirect2 = 0;
 	}
 
-	file->tfs_next_free = 0;
+	//file->tfs_next_free = 0;
 
+	er=add_OF_FLAG_FreeListe(p,nbFile,FLAG_FILE);// add the new free file entry in the free file list
+	testerror(er);
+	free(file);
 	er.val = 0;
 	er.message = "Delete SUCCES of file";
 	return er;
@@ -337,7 +380,10 @@ error add_OF_FLAG_FreeListe(partition p, uint32_t numberOfValueToAdd, int FLAG) 
 		}
 	}
 
-	//write the new block or new file of the filetab
+	/********************************************************/
+	/**
+	 * write the new block or new file of the filetab
+	 */
 	if (FLAG == FLAG_BLOCK) {
 
 		er = writeBlockOfPartition(p, *b, numberOfValueToAdd);
@@ -361,8 +407,11 @@ error add_OF_FLAG_FreeListe(partition p, uint32_t numberOfValueToAdd, int FLAG) 
 		free(file);
 
 	}
+	/********************************************************/
+	/**
+	 * //write the new descriptionBlock
+	 */
 
-	//write the new descriptionBlock
 	er = writeDescriptionBlock(p, dB);
 	testerror(er);
 	free(dB);
@@ -418,14 +467,14 @@ uint32_t remove_OF_FLAG_FreeListe(partition p, int FLAG) {
 		testerror(er);
 	}
 	if (FLAG == FLAG_BLOCK) {
-		printf("remove block\n");
+
 		dB->volumeFirstFreeBlock = tmp2;
 		dB->volumeFreeBlockNb = (dB->volumeFreeBlockNb) - 1;
 
 		freeBlock(b);
 
 	} else if (FLAG == FLAG_FILE) {
-		printf("remove file\n");
+
 		dB->volumeFirstFreeFile = tmp2;
 		dB->volumeFreeFileNb = (dB->volumeFreeFileNb) - 1;
 		free(file);
@@ -497,7 +546,6 @@ error writeDescriptionBlock(partition p, descriptionBlock* dB) {
  */
 int isFolder(file* file) {
 	if (file == NULL) {
-		printf("file not a folder");
 		return -1;
 	}
 	if (file->tfs_type == 1) {
@@ -508,19 +556,16 @@ int isFolder(file* file) {
 }
 
 /**
- * return the number of the new file for the new empty folder
+ * return the number of the new file in  File Table for the new empty folder , or new empty file
  */
-int createEmptyFolder(partition p, uint32_t parentFolder) {
+int createEmptyEntry(partition p, uint32_t parentFolder,int FLAG) {
 
-	descriptionBlock * dB;
-	dB = initDescriptionBlock();
 	error er;
-	er = getDescriptionBlock(p, dB);
 	testerror(er);
 	uint32_t numberOfFile = remove_OF_FLAG_FreeListe(p, FLAG_FILE);
 
 	if(numberOfFile==-1){
-		free(dB);
+
 		return -1;
 
 	}
@@ -532,31 +577,45 @@ int createEmptyFolder(partition p, uint32_t parentFolder) {
 	uint32_t numberOfBlock = remove_OF_FLAG_FreeListe(p, FLAG_BLOCK);
 
 	if(numberOfBlock==-1){
-		free(dB);
+		//no more free block !!
+		er=add_OF_FLAG_FreeListe(p,numberOfFile,FLAG_FILE);
+		testerror(er);
 		free(file);
 		return -1;
 	}
-	printf("numberblock : %d\n",numberOfBlock);
-	printf("numberfile : %d\n",numberOfFile);
-	block * b;
-	b = initBlock();
+	//printf("numberblock : %d\n",numberOfBlock);
+	//printf("numberfile : %d\n",numberOfFile);
 
-	//er = readBlockOfPartition(p, *b, numberOfBlock);
-	//testerror(er);
+	if (FLAG == FLAG_ENTRY_FOLDER) {
+		block * b;
+		b = initBlock();
 
-	b->valeur[0] = valueToNombre32bits(numberOfFile);
-	//TODO add ascii '.'
-	b->valeur[1] = fourCharToNombre32bits(ASCII_FOR_POINT,0,0,0);
+		b->valeur[0] = valueToNombre32bits(numberOfFile);
+		//TODO add ascii '.'
+		b->valeur[1] = fourCharToNombre32bits(ASCII_FOR_POINT, 0, 0, 0);
 
-	b->valeur[8] = valueToNombre32bits(parentFolder);
+		b->valeur[8] = valueToNombre32bits(parentFolder);
 
-	b->valeur[9] = fourCharToNombre32bits(ASCII_FOR_POINT,ASCII_FOR_POINT,0,0);
+		b->valeur[9] = fourCharToNombre32bits(ASCII_FOR_POINT, ASCII_FOR_POINT,0, 0);
 
-	er = writeBlockOfPartition(p, *b, numberOfBlock);
-	testerror(er);
+		er = writeBlockOfPartition(p, *b, numberOfBlock);
+		testerror(er);
 
-	file->tfs_size = 64;
-	file->tfs_type = 1;
+		file->tfs_size = 64;
+		file->tfs_type = 1;
+
+		freeBlock(b);
+	}
+	else if(FLAG==FLAG_ENTRY_FILE){
+		file->tfs_size = 0;
+		file->tfs_type = 0;
+	}
+
+	else{
+		er.val=1;
+		er.message="error in the FLAG of createEmptyEntry ";
+		testerror(er);
+	}
 	file->tfs_subtype = 0;
 	file->tfs_direct[0] = numberOfBlock;
 	file->tfs_next_free = 0;
@@ -564,70 +623,90 @@ int createEmptyFolder(partition p, uint32_t parentFolder) {
 	er = writeFile_Of_FileTab(p, file);
 	testerror(er);
 
-	freeBlock(b);
 	free(file);
-	free(dB);
 	return numberOfFile;
-
-	return 0;
-
 }
 
 /**
- * return the first empty entrance for new folder in block
+ * insert in the first empty entrance the new Entry in block
  */
-int firstEmptyZoneInblockForFolder(block * b) {
-	error er;
+int insertInBlock(block * b, uint32_t nbFile,char* nameEntry,int sizeNameEntry,int numberOfNewFile) {
+
+	int succes=0;
 	if (b == NULL) {
-		return -1;
+		error er;
+		er.val=1;
+		er.message="error with arg block in insertFolderInBlock";
+		testerror(er);
 	}
 
 	int i;
-	for (i = 0; i < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK;
-			i + SIZE_FOLDER_ENTRANCE) {
+	int j;
+	for (i = 0; i < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; i=i+SIZE_ENTRY_IN_FOLDER) {
 		if (b->valeur[i] == 0) {
-			//TODO DO NOT ERASE THE ROOT OF FOLDERS !!!
-			return i;
 
+			if(nbFile==0 && i<64){
+				//DO NOT ERASE THE ROOT
+			}
+			else{
+				b->valeur[i]=valueToNombre32bits(numberOfNewFile);
+				for (j = 0; j < sizeNameEntry; j=j+4) {
+					b->valeur[i+1+j] = fourCharToNombre32bits(nameEntry[j],nameEntry[j+1],nameEntry[j+2],nameEntry[j+3]);
+					//TODO
+				}
+				break;
+				succes=1;
+			}
 		}
 	}
-
+	return succes;
 }
 
 /**
- * return the number of the first free position of
- *  tfs_direct or tfs_indirect1 or tfs_indirect2 of the Folder
+ *
  */
-int firstEmptyZoneInFolder(partition p, file* file) {
+int insertInFolder(partition p, file* file,char* nameEntry,int sizeNameEntry,int numberOfNewFile) {
 
 	/**
 	 * DIRECT
 	 */
 
 	error er;
+
+
+	block* b;
+	b = initBlock();
+
 	int i;
 	for (i = 0; i < 10; i++) {
 		if (file->tfs_direct[i] == 0) {
-			return i;
+
+		}else{
+			er = readBlockOfPartition(p, *b, file->tfs_indirect1);
+			testerror(er);
+			int result=insertInBlock(b,file->nbFile,nameEntry,sizeNameEntry,numberOfNewFile);
+			if(result){
+				return result;
+			}
 		}
 	}
 	/**
 	 * INDIRECT1
 	 */
 
-	block* b;
-	b = initBlock();
-	er = readBlockOfPartition(p, *b, file->tfs_indirect1);
+	block* b1;
+	b1 = initBlock();
+	er = readBlockOfPartition(p, *b1, file->tfs_indirect1);
 	testerror(er);
 
 	int j;
 	for (j = 0; j < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; j++) {
-		if (b->valeur[j] == 0) {
+		if (b1->valeur[j] == 0) {
 			return j + DIRECT_TAB;
 		}
 	}
 
-	freeBlock(b);
+	freeBlock(b1);
 
 	/**
 	 * INDIRECT2
@@ -665,32 +744,63 @@ int firstEmptyZoneInFolder(partition p, file* file) {
 	}
 }
 
-error addFolder(partition p, file* file, char* nameFolder,
-		uint32_t parentFolder) {
+error addEntry(partition p, file* file, char* nameEntry,int FLAG) {
 
 	error er;
 	int i;
 	int ASCII_END_FOUND = 0;
-	for (i = 0; i < SIZE_MAX_NAME_FOLDER; i++) {
-		if (i == 0) {
+	int sizeNameEntry=0;
+	for (i = 0; i < SIZE_MAX_NAME_ENTRY; i++) {
+		if (nameEntry[i] == 0) {
+			sizeNameEntry=i;
 			ASCII_END_FOUND = 1;
 			break;
 		}
 	}
+	if(sizeNameEntry<1){
+		er.val = 1;
+		er.message = "the name of the folder is smaller than 1 characters :\n";
+		return er;
+	}
 
 	if (!ASCII_END_FOUND) {
 		er.val = 1;
-		er.message = "the name of the folder is bigger than 27 characters";
-//TODO add at the message the nameFolder give by the user
+		er.message = "the name of the folder is bigger than 27 characters :\n %s",nameEntry;
 		return er;
 	}
 	if (!isFolder(file)) {
 
 		er.val = 1;
-		er.message = "the file i not a folder so you cant add a folder in ";
+		er.message = "the file %d is not a folder so you cant add something inside",file->nbFile;
 		return er;
 	}
 
-	int blockNumber_OfNewEmptyFolder = createEmptyFolder(p, file->nbFile);
+	int numberOfNewFile;
 
+	if(FLAG==FLAG_ENTRY_FOLDER){
+		numberOfNewFile= createEmptyEntry(p, file->nbFile,FLAG_ENTRY_FOLDER);
+	}else if(FLAG==FLAG_ENTRY_FILE){
+		numberOfNewFile= createEmptyEntry(p, file->nbFile,FLAG_ENTRY_FILE);
+	}else{
+		er.val=1;
+		er.message="error in the FLAG of createEmptyEntry ";
+		testerror(er);
+	}
+
+	if(numberOfNewFile==-1){
+		er.val=1;
+		er.message="NO MORE FREE PLACE IN THE DISK FOR A NEW FOLDER";
+		return er;
+	}
+	int result;
+	result=insertInFolder(p,file,nameEntry,sizeNameEntry,numberOfNewFile);
+	if(result==1){
+		er.val=1;
+		er.message="CONTAINS LIMIT OF A FOLDER , you cannot add anithing to the folder %d",file->nbFile;
+		return er;
+	}
+
+	er.val=0;
+	er.message="FOLDER CREATE";
+	return er;
 }

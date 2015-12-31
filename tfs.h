@@ -4,16 +4,17 @@
 #include "ll.h"
 
 
-#define DIRECT_TAB 10
-#define SIZE_MAX_NAME_FOLDER 28
-
-// the numerotation of file start at 1 to the max count file of the user
 
 // the numerotation of block start at 0 in every partition , the block 0 is the TTTFS Description Block
+error readBlockOfPartition (partition p,block b,uint32_t numberBlock);
+error writeBlockOfPartition (partition p,block b,uint32_t numberBlock);
 
-typedef struct {
-} DIR;
 
+
+/********************************************************/
+/**
+ * TTTFS Description Block
+ */
 typedef struct {
 	uint32_t magic;
 	uint32_t volumeBlockSize;
@@ -24,6 +25,26 @@ typedef struct {
 	uint32_t volumeFreeFileNb;
 	uint32_t volumeFirstFreeFile;
 }descriptionBlock;
+
+descriptionBlock* initDescriptionBlock();
+
+#define TTTFS_MAGIC_NUMBER 827541076
+#define TTTFS_VOLUME_BLOCK_SIZE TFS_VOLUME_BLOCK_SIZE
+
+error getDescriptionBlock(partition p, descriptionBlock* dB);
+error writeDescriptionBlock(partition p,descriptionBlock* dB);
+
+error add_OF_FLAG_FreeListe(partition p, uint32_t numberOfValueToAdd, int FLAG);
+uint32_t remove_OF_FLAG_FreeListe(partition p, int FLAG);
+
+
+
+/********************************************************/
+/**
+ * FILE
+ */
+
+#define DIRECT_TAB 10
 
 typedef struct {
 	uint32_t tfs_size;
@@ -36,15 +57,33 @@ typedef struct {
 	uint32_t nbFile;
 }file;
 
+#define TFS_REGULAR 0
+#define TFS_DIRECTORY 1
+#define TFS_PSEUDO 2
+#define TFS_DATE 0
+#define TFS_DISK 1
 
-#define SIZE_FOLDER_ENTRANCE 8
+file* initFile();
+
+file* getFile_Of_FileTab(partition p,uint32_t nbFile);
+error writeFile_Of_FileTab(partition p,file* file);
+
+uint32_t getblockNumber_Of_File(uint32_t nbFile);
+uint32_t positionInBlock_Of_File(uint32_t nbFile ,uint32_t blockNumber);
+
+#define SIZE_ENTRY_IN_FOLDER 32
+#define NUMBER_OF_ENTRY_IN_ONE_BLOCK TFS_VOLUME_BLOCK_SIZE/SIZE_ENTRY_IN_FOLDER
+
 #define ASCII_FOR_POINT 46
 
 #define FLAG_BLOCK 1
 #define FLAG_FILE 2
 
-#define FLAG_DELETE_SECURE 1
-#define FLAG_DELETE_SIMPLE 1
+/********************************************************/
+/**
+ * TTTFS File Table
+ */
+
 
 #define TTTFS_NUMBER_OF_INT_IN_KEY_OF_FILE_TABLE 16 // there is 16 int for 1 entrance in the file table
 #define TTTFS_NUMBER_OF_FILE_IN_ONE_BLOCK TFS_VOLUME_BLOCK_SIZE/TTTFS_NUMBER_OF_INT_IN_KEY_OF_FILE_TABLE //  1024/16 =64
@@ -60,37 +99,38 @@ typedef struct {
 #define INDIRECT_2_MAX_SIZE INDIRECT_1_MAX_SIZE + TFS_V_N_V_B_B_3 // 68096 +256*256*256 = 16845312
 
 
-#define TTTFS_MAGIC_NUMBER 827541076
-#define TTTFS_VOLUME_BLOCK_SIZE TFS_VOLUME_BLOCK_SIZE
-#define TFS_REGULAR 0
-#define TFS_DIRECTORY 1
-#define TFS_PSEUDO 2
-#define TFS_DATE 0
-#define TFS_DISK 1
 
-error readBlockOfPartition (partition p,block b,uint32_t numberBlock);
-error writeBlockOfPartition (partition p,block b,uint32_t numberBlock);
+/********************************************************/
+/**
+ *  ADD and DELETE ENTRY in TTTFS
+ */
 
-error getDescriptionBlock(partition p, descriptionBlock* dB);
-error writeDescriptionBlock(partition p,descriptionBlock* dB);
+#define SIZE_MAX_NAME_ENTRY 28
 
 
-error add_OF_FLAG_FreeListe(partition p, uint32_t numberOfValueToAdd, int FLAG);
-uint32_t remove_OF_FLAG_FreeListe(partition p, int FLAG);
+#define FLAG_ENTRY_FOLDER 1
+#define FLAG_ENTRY_FILE 2
 
-file* getFile_Of_FileTab(partition p,uint32_t nbFile);
-error writeFile_Of_FileTab(partition p,file* file);
+int createEmptyEntry(partition p, uint32_t parentFolder,int FLAG);
 
-uint32_t getblockNumber_Of_File(uint32_t nbFile);
-uint32_t positionInBlock_Of_File(uint32_t nbFile ,uint32_t blockNumber);
+#define DELETE_FOLDER 1 // OPTION FOR RM
 
+error deleteEntry(partition p, uint32_t nbFile, int FLAG_SECURE , int FOLDER_OPTION);
+void delete_File_Indirect2(partition p, uint32_t nbBlock, int FLAG, int FLAG_SECURE);
+void delete_File_Indirect1(partition p, uint32_t nbBlock,int FLAG, int FLAG_SECURE);
+void delete_File_Direct(partition p, uint32_t nbBlock, int FLAG, int FLAG_SECURE);
+error cleanBlock(partition p, uint32_t nbBlock , int FLAG,int FLAG_SECURE);
 
-int createEmptyFolder(partition p, uint32_t parentFolder);
+#define FLAG_DELETE_SECURE 1
+#define FLAG_DELETE_SIMPLE 2
 
+/********************************************************/
+/**
+ * API
+ */
 
-file* initFile();
-descriptionBlock* initDescriptionBlock();
-
+typedef struct {
+} DIR;
 
 int tfs_mkdir(const char *path, mode_t mode);
 int tfs_rmdir(const char *path);
