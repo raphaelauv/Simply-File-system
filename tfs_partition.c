@@ -76,9 +76,15 @@ int main(int argc, char *argv[]) {
 		/**
 		 * TEST PARTITION(S)  WITH ASKED DISK
 		 */
-
-		disk_id *disk = malloc(sizeof(*disk));
 		error er;
+		disk_id *disk = malloc(sizeof(*disk));
+		if(disk==NULL){
+		er.val=1;
+		er.message="ERROR MALLOC disk in TFS_PARTITION";
+		testerror(er);
+		}
+
+
 		char* nameFile;
 		if (NameSelected == 0) {
 			nameFile = "disk.tfs";

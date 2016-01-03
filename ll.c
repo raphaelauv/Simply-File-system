@@ -35,7 +35,7 @@ int firstblockPositionOfPartition(int nbPartition, disk_id disk) {
 int getSizePartition(int n,disk_id disk){
 
 	int * array;
-	printf("dans getsize\n");
+
 
 	array = getInfo(disk);
 
@@ -47,7 +47,6 @@ int getSizePartition(int n,disk_id disk){
 	int tailleBefore = array[n + 2];
 
 	free(array);
-	printf("taille partition : %d", tailleBefore);
 	return tailleBefore;
 
 }
@@ -65,14 +64,19 @@ int getSizePartition(int n,disk_id disk){
 int* getInfo(disk_id disk) {
 	error er;
 	block *b;
-	printf("avant init\n");
+
 	b = initBlock();
-	printf("apres init\n");
+
 	er = read_block(disk, *b, 0);
 	testerror(er);
 
 	int nbParitionActual = nombre32bitsToValue(b->valeur[1]);
 	int *array=malloc(5*sizeof(int) + nbParitionActual*sizeof(int));
+	if(array==NULL){
+		er.val=1;
+		er.message="MALLOC ERROR getInfo";
+		testerror(er);
+	}
 	array[0] = nombre32bitsToValue(b->valeur[0]); //size of drive
 	array[1] = nbParitionActual; //nb of partitions
 
@@ -254,13 +258,9 @@ block* initBlock() {
 	}
 
 	int i;
-	printf("initblock\n");
+
 	for (i = 0; i < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; i++) {
-		//printf("valeur de i ; %d\n",i);
 		block->valeur[i] = valueToNombre32bits(0);
-		if(block->valeur[i]==NULL){
-					printf("malloc ERROR\n");
-				}
 	}
 
 	return block;

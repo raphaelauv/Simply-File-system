@@ -38,8 +38,14 @@ int main(int argc, char *argv[]) {
 			return 1;
 
 		} else {
-			disk_id *disk = malloc(sizeof(*disk));
 			error er;
+			disk_id *disk = malloc(sizeof(*disk));
+			if(disk==NULL){
+				er.val=1;
+				er.message="ERROR MALLOC DISK in TFS_CREATE";
+				testerror(er);
+			}
+
 			char* nameFile;
 
 			if (argc > 3) {  //the user give a name to the file

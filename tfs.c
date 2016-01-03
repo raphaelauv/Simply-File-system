@@ -68,7 +68,9 @@ file* getFile_Of_FileTab(partition p, uint32_t nbFile) {
 			b->valeur[positionInBlock + 5 + DIRECT_TAB]);
 
 	file->nbFile=nbFile;
+
 	freeBlock(b);
+
 	return file;
 }
 
@@ -137,7 +139,7 @@ error writeFile_Of_FileTab(partition p, file* file) {
 			file->tfs_next_free);
 
 	er = writeBlockOfPartition(p, *b, blockNumber);
-
+	freeBlock(b);
 	return er;
 }
 
@@ -290,8 +292,6 @@ error deleteEntry(partition p, uint32_t nbFile, int FLAG_SECURE , int FOLDER_OPT
 error readBlockOfPartition(partition p, block b, uint32_t numberBlock) {
 	error er;
 
-
-
 	uint32_t positionOnTFS = (p.firstPositionInTFS) + numberBlock;
 	//printf("number block a lire : %d\n",positionOnTFS);
 
@@ -314,6 +314,12 @@ error writeBlockOfPartition(partition p, block b, uint32_t numberBlock) {
 descriptionBlock* initDescriptionBlock() {
 
 	descriptionBlock *dB = malloc(sizeof(descriptionBlock));
+	if(dB==NULL){
+		error er;
+		er.val=1;
+		er.message="ERROR MALLOC initDescriptionBlock";
+		testerror(er);
+	}
 	return dB;
 
 }
@@ -322,7 +328,6 @@ file* initFile() {
 
 	file * file = malloc(sizeof(*file));
 	if (file == NULL) {
-	//TODO
 			error er;
 			er.val=1;
 			er.message="error malloc file in INITFILE ";
@@ -339,8 +344,6 @@ file* initFile() {
 	file->tfs_subtype = 0;
 	file->tfs_type = 0;
 	file->tfs_next_free = 0;
-
-
 	return file;
 
 }
@@ -366,7 +369,6 @@ error add_OF_FLAG_FreeListe(partition p, uint32_t numberOfValueToAdd, int FLAG) 
 		testerror(er);
 
 	} else if (FLAG == FLAG_FILE) {
-		file = initFile();
 		old = dB->volumeFirstFreeFile;
 	} else {
 		er.val = 1;
@@ -399,7 +401,7 @@ error add_OF_FLAG_FreeListe(partition p, uint32_t numberOfValueToAdd, int FLAG) 
 			b->valeur[TFS_VOLUME_NUMBER_VALUE_BY_BLOCK - 1] =
 					valueToNombre32bits(numberOfValueToAdd);
 		} else if (FLAG == FLAG_FILE) {
-
+			file = initFile();
 			file->tfs_next_free = numberOfValueToAdd;
 		}
 	}
@@ -441,7 +443,6 @@ error add_OF_FLAG_FreeListe(partition p, uint32_t numberOfValueToAdd, int FLAG) 
 	free(dB);
 	er.val = 0;
 	er.message = "new block or file add at first with succes";
-
 	return er;
 }
 
@@ -475,7 +476,7 @@ uint32_t remove_OF_FLAG_FreeListe(partition p, int FLAG) {
 		tmp2 = nombre32bitsToValue(
 				b->valeur[TFS_VOLUME_NUMBER_VALUE_BY_BLOCK - 1]);
 
-		b = initBlock();
+		//b = initBlock();
 
 	} else if (FLAG == FLAG_FILE) {
 
@@ -484,7 +485,7 @@ uint32_t remove_OF_FLAG_FreeListe(partition p, int FLAG) {
 		}
 		tmp = dB->volumeFirstFreeFile;
 
-		file = initFile();
+		//file = initFile();
 		file = getFile_Of_FileTab(p, tmp);
 		testerror(er);
 		tmp2 = file->tfs_next_free;
