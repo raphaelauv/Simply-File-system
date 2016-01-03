@@ -19,11 +19,13 @@ int main(int argc, char *argv[]) {
 	int valreturnSSCRANF = sscanf(argv[2], "%d", &nbPartition);
 
 	if (valreturnSSCRANF != 1 || nbPartition < 0) {
+		//printf("val de partition : %d\n",nbPartition);
 		fprintf(stderr, "\n-p argument,"
 				" the number of partition enter :  %d  is NOT CORRECT \n",
 				nbPartition);
 		return 1;
 	}
+	printf("nb of partition selected : %d \n",nbPartition);
 	int file_count = 0;
 	valreturnSSCRANF = sscanf(argv[4], "%d", &file_count);
 
@@ -35,6 +37,9 @@ int main(int argc, char *argv[]) {
 	}
 
 	disk_id *disk = malloc(sizeof(*disk));
+	if(disk==NULL){
+		return 1;
+	}
 	error er;
 	char* nameFile;
 	if (argc != 6) {
@@ -51,10 +56,17 @@ int main(int argc, char *argv[]) {
 	 * TTTFS Description Block
 	 */
 	block *b;
+	printf("init 1 \n");
 	b = initBlock();
 	er = start_disk(nameFile, disk);
 	testerror(er);
+	printf("init 2\n");
 	int positionFirstBlock=firstblockPositionOfPartition(nbPartition,*disk);
+
+
+	printf("init 3\n");
+	int sizePartition=getSizePartition(nbPartition,*disk);
+	printf("size partition : %d \n",sizePartition);
 
 	if(positionFirstBlock ==-1){
 		er.val=1;
@@ -67,6 +79,7 @@ int main(int argc, char *argv[]) {
 	p->disque=disk;
 	p->firstPositionInTFS=positionFirstBlock;
 
+
 	er=readBlockOfPartition(*p,*b,0);
 	testerror(er);
 
@@ -77,14 +90,18 @@ int main(int argc, char *argv[]) {
 			return 1;
 	}
 
+	free(b->valeur[0]);
 	b->valeur[0] = valueToNombre32bits(TTTFS_MAGIC_NUMBER);
+	free(b->valeur[1]);
 	b->valeur[1] = valueToNombre32bits(TFS_VOLUME_BLOCK_SIZE);
 
-	int sizePartition=getSizePartition(nbPartition,*disk);
+
 	int nbFreeBlock =sizePartition-1;
 
 	//printf("size partition ask : %d\n",sizePartition);
+	free(b->valeur[2]);
 	b->valeur[2] = valueToNombre32bits(sizePartition);
+
 
 	/********************************************************/
 	/** MAX FILE
@@ -93,6 +110,7 @@ int main(int argc, char *argv[]) {
 	int nbOfBlockForFileTab = file_count/TTTFS_NUMBER_OF_FILE_IN_ONE_BLOCK;
 
 	if(nbOfBlockForFileTab<1){ nbOfBlockForFileTab=1;}
+
 
 	//printf("\n nb of block for file tab : %d\n",nbOfBlockForFileTab);
 
@@ -108,6 +126,7 @@ int main(int argc, char *argv[]) {
 	//printf("val de file count : %d \n", file_count);
 
 	//-1 because of the root
+	free(b->valeur[5]);
 	b->valeur[5] = valueToNombre32bits(file_count);
 
 	/********************************************************/
@@ -116,7 +135,9 @@ int main(int argc, char *argv[]) {
 	 */
 
 	er=writeBlockOfPartition(*p,*b,0);
+
 	testerror(er);
+
 
 	/********************************************************/
 	/**
@@ -124,7 +145,6 @@ int main(int argc, char *argv[]) {
 	 */
 
 	file_count=file_count+1;// to add the ROOT un-delatable
-
 
 	int i;
 
@@ -172,4 +192,3 @@ int main(int argc, char *argv[]) {
 	return 0;
 
 }
-

@@ -10,46 +10,46 @@ void testerror(error er) {
 
 /// return the first block of a partition on the TFS , -1 if its impossible
 int firstblockPositionOfPartition(int nbPartition, disk_id disk) {
-
-
 	int * array;
 	array = getInfo(disk);
 	int nbRealPartitions = array[1];
 
+	//printf("nb real patition : %d\n",nbRealPartitions);
 	if (nbPartition >= nbRealPartitions) {
 		return -1;
 	}
 	int i;
-	int tailleBefore=1;//the first block of disk
-	for (i = 1; i < nbPartition; i++) {
-		tailleBefore=tailleBefore+array[i + 1];
+
+	int tailleBefore=1;//the first block of disk for partition 0
+
+	for (i = 0; i < nbPartition; i++) {
+		tailleBefore+=array[i+2];
 	}
 
+	free(array);
+	//printf("premier block de la partition %d : %d\n",nbPartition,tailleBefore);
 	return tailleBefore;
-
 }
 
 /// Return the size of the n partition
 int getSizePartition(int n,disk_id disk){
 
-	error er;
-	block *b;
-	b = initBlock();
-	er = read_block(disk, *b, 0);
-	testerror(er);
+	int * array;
+	printf("dans getsize\n");
 
-	if(n<0 || n> nombre32bitsToValue(b->valeur[1]) ){
-		error er;
-		er.val=1;
-		er.message="Error in the n argument of getSizePartition";
-		testerror(er);
+	array = getInfo(disk);
+
+	int nbRealPartitions = array[1];
+
+	if (n >= nbRealPartitions) {
+		return -1;
 	}
+	int tailleBefore = array[n + 2];
 
-	int sizePartition=nombre32bitsToValue(b->valeur[n+2]);
+	free(array);
+	printf("taille partition : %d", tailleBefore);
+	return tailleBefore;
 
-	freeBlock(b);
-
-	return sizePartition;
 }
 
 /// return a tab with the information of the first block of the TFS
@@ -65,12 +65,14 @@ int getSizePartition(int n,disk_id disk){
 int* getInfo(disk_id disk) {
 	error er;
 	block *b;
+	printf("avant init\n");
 	b = initBlock();
+	printf("apres init\n");
 	er = read_block(disk, *b, 0);
 	testerror(er);
 
 	int nbParitionActual = nombre32bitsToValue(b->valeur[1]);
-	int *array=malloc(5 + nbParitionActual);
+	int *array=malloc(5*sizeof(int) + nbParitionActual*sizeof(int));
 	array[0] = nombre32bitsToValue(b->valeur[0]); //size of drive
 	array[1] = nbParitionActual; //nb of partitions
 
@@ -217,7 +219,13 @@ nombre32bits* valueToNombre32bits(uint32_t n) {
 
 	//maximum value : FFFFFFFF -> 4294967295;
 	nombre32bits * bytes;
-	bytes = malloc(sizeof(*bytes));
+	bytes = malloc(sizeof(bytes));
+	if(bytes==NULL){
+		error er;
+		er.val=1;
+		er.message="erreur malloc valueToNombre32bits";
+		testerror(er);
+	}
 
 	if (check_for_endianness() == 0) {
 
@@ -237,12 +245,24 @@ nombre32bits* valueToNombre32bits(uint32_t n) {
 
 }
 block* initBlock() {
-	block *block = malloc(sizeof(*block));
-	int i;
-	for (i = 0; i < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; i++) {
-		block->valeur[i] = malloc(sizeof(nombre32bits));
-		block->valeur[i] = valueToNombre32bits(0);
+	error er;
+	block *block= malloc(sizeof(*block));
+	if(block==NULL){
+		er.val=1;
+		er.message="Error malloc initblock";
+		testerror(er);
 	}
+
+	int i;
+	printf("initblock\n");
+	for (i = 0; i < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; i++) {
+		//printf("valeur de i ; %d\n",i);
+		block->valeur[i] = valueToNombre32bits(0);
+		if(block->valeur[i]==NULL){
+					printf("malloc ERROR\n");
+				}
+	}
+
 	return block;
 
 }
@@ -292,11 +312,11 @@ error static write_physical_block(disk_id id, block b, uint32_t num) {
 	error er;
 
 	for (i = 0; i < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; i++) {
-
+/*
 		if (b.valeur[i] == NULL) {
 			printf("null\n");
 			b.valeur[i] = valueToNombre32bits(0);
-		}
+		}*/
 		//printNombre32bits(b.valeur[i]);
 		ecris = fwrite(b.valeur[i], 1, TFS_VOLUME_DIVISION_OCTAL, id.fichier);
 		if (ecris != TFS_VOLUME_DIVISION_OCTAL) {
@@ -310,6 +330,7 @@ error static write_physical_block(disk_id id, block b, uint32_t num) {
 }
 error read_block(disk_id id, block b, uint32_t num) {
 	error er;
+
 	er = read_physical_block(id, b, num);
 	return er;
 }

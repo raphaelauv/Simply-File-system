@@ -74,6 +74,7 @@ int main(int argc, char *argv[]) {
 			testerror(er);
 			block *b;
 			b = initBlock();
+			free(b->valeur[0]);
 			b->valeur[0] = valueToNombre32bits(size);
 			//b->valeur[1] = valueToNombre32bits(1);// there is 1 partition at first
 			//b->valeur[2] = valueToNombre32bits(size-1);
@@ -87,7 +88,7 @@ int main(int argc, char *argv[]) {
 			 */
 			er=stop_disk(*disk);
 			testerror(er);
-			freeBlock;
+			freeBlock(b);
 			freeDisk(disk);
 			return 0;
 		}

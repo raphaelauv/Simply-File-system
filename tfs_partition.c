@@ -128,7 +128,7 @@ int main(int argc, char *argv[]) {
 		/**
 		 * CREATE THE PARTITION(S)
 		 */
-
+		free(b->valeur[1]);
 		b->valeur[1] = valueToNombre32bits(nbParitionTOtal);
 
 		int j = 0;
@@ -137,7 +137,7 @@ int main(int argc, char *argv[]) {
 		for (i = 0; i < nbPartitions; i++) {
 
 			int val = 2 + nbParitionActual + i;
-
+			free(b->valeur[val]);
 			b->valeur[val] = valueToNombre32bits(sizeOfNewPartitions[j]);
 
 			printNombre32bits(b->valeur[val]);
@@ -148,8 +148,6 @@ int main(int argc, char *argv[]) {
 		}
 
 		er = write_block(*disk, *b, 0);
-		printf("\nposition partition 5 :%d\n",
-				firstblockPositionOfPartition(5, *disk));
 		testerror(er);
 		er = stop_disk(*disk);
 		testerror(er);

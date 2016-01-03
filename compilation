@@ -1,5 +1,3 @@
-#!/bin/bash
-
 gcc -c -fPIC ll.c -o ll.o
 
 gcc -shared -fPIC ll.o -o libll.so
