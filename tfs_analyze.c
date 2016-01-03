@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
 	printf("TAILLE OCCUPE AU TOTAL PAR PARTITIONS : %d\n",array[nbPartitions+2]);
 	printf("ESPACE DISPONIBLE : %d\n",array[nbPartitions+3]);
 	printf("NOMBRE MAX DE PARTITION ENCORE CREABLE : %d\n",array[nbPartitions+4]);
-
+	free(array);
 	er = stop_disk(*disk);
 		testerror(er);
 		freeDisk(disk);

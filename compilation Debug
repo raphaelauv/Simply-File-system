@@ -1,0 +1,19 @@
+gcc -g -c -fPIC ll.c -o ll.o
+
+gcc  -g -shared -fPIC ll.o -o libll.so
+
+sudo cp libll.so /usr/lib/
+
+gcc -g tfs_create.c -lll -L /usr/lib/  -o tfs_create
+
+gcc  -g tfs_analyze.c -lll -L /usr/lib/  -o tfs_analyze
+
+gcc -g tfs_partition.c -lll -L /usr/lib/  -o tfs_partition
+
+gcc -g -c -fPIC tfs.c -o tfs.o
+
+gcc -g -shared -fPIC tfs.o -o libtfs.so
+
+sudo cp libtfs.so /usr/lib/
+
+gcc -g tfs_format.c -lll -ltfs -L /usr/lib/  -o tfs_format
