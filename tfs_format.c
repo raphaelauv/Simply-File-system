@@ -2,8 +2,6 @@
 
 int main(int argc, char *argv[]) {
 
-
-
 	/********************************************************/
 	/**
 	 * TEST OF ARGUMENTS
@@ -11,7 +9,7 @@ int main(int argc, char *argv[]) {
 
 	if (argc < 5 || argc > 6 || strcmp(argv[1], "-p") != 0
 			|| strcmp(argv[3], "-mf") != 0) {
-		printf("ERREUR WITH ARGUMENTS");
+		fprintf(stderr, "ERREUR WITH ARGUMENTS");
 		return 1;
 
 	}
@@ -25,7 +23,8 @@ int main(int argc, char *argv[]) {
 				nbPartition);
 		return 1;
 	}
-	printf("nb of partition selected : %d \n",nbPartition);
+
+
 	int file_count = 0;
 	valreturnSSCRANF = sscanf(argv[4], "%d", &file_count);
 
@@ -35,12 +34,14 @@ int main(int argc, char *argv[]) {
 				nbPartition);
 		return 1;
 	}
-
+	error er;
 	disk_id *disk = malloc(sizeof(*disk));
 	if(disk==NULL){
-		return 1;
+		er.val=1;
+		er.message="ERROR MALLOC disk in TFS_FORMAT";
+		testerror(er);
 	}
-	error er;
+
 	char* nameFile;
 	if (argc != 6) {
 		nameFile = "disk.tfs";
@@ -56,26 +57,29 @@ int main(int argc, char *argv[]) {
 	 * TTTFS Description Block
 	 */
 	block *b;
-	printf("init 1 \n");
+
 	b = initBlock();
 	er = start_disk(nameFile, disk);
 	testerror(er);
-	printf("init 2\n");
+
 	int positionFirstBlock=firstblockPositionOfPartition(nbPartition,*disk);
 
-
-	printf("init 3\n");
 	int sizePartition=getSizePartition(nbPartition,*disk);
-	printf("size partition : %d \n",sizePartition);
+
 
 	if(positionFirstBlock ==-1){
 		er.val=1;
 		er.message="The partition selected do not exist in the tfs";
 		testerror(er);
 	}
-	//printf("position : %d\n",positionFirstBlock);
 
 	partition *p=malloc(sizeof(partition));
+	if(p==NULL){
+		er.val=1;
+		er.message="ERROR MALLOC partition in TFS_FORMAT";
+		testerror(er);
+	}
+
 	p->disque=disk;
 	p->firstPositionInTFS=positionFirstBlock;
 
@@ -94,7 +98,6 @@ int main(int argc, char *argv[]) {
 	b->valeur[0] = valueToNombre32bits(TTTFS_MAGIC_NUMBER);
 	free(b->valeur[1]);
 	b->valeur[1] = valueToNombre32bits(TFS_VOLUME_BLOCK_SIZE);
-
 
 	int nbFreeBlock =sizePartition-1;
 
@@ -137,7 +140,6 @@ int main(int argc, char *argv[]) {
 	er=writeBlockOfPartition(*p,*b,0);
 
 	testerror(er);
-
 
 	/********************************************************/
 	/**
@@ -185,9 +187,7 @@ int main(int argc, char *argv[]) {
 	freeBlock(b);
 	freeDisk(disk);
 	free(p);
-
 	printf("SUCCES -> Format of %s\n",nameFile);
-
 
 	return 0;
 
