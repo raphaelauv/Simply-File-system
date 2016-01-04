@@ -287,7 +287,6 @@ error deleteEntry(partition p, uint32_t nbFile, int FLAG_SECURE , int FOLDER_OPT
 	return er;
 
 }
-
 //read the numberBlock block of the p partition
 error readBlockOfPartition(partition p, block b, uint32_t numberBlock) {
 	error er;
@@ -313,7 +312,8 @@ error writeBlockOfPartition(partition p, block b, uint32_t numberBlock) {
 }
 descriptionBlock* initDescriptionBlock() {
 
-	descriptionBlock *dB = malloc(sizeof(descriptionBlock));
+	descriptionBlock * dB = NULL;
+	dB= malloc(sizeof (descriptionBlock ));
 	if(dB==NULL){
 		error er;
 		er.val=1;
@@ -326,25 +326,26 @@ descriptionBlock* initDescriptionBlock() {
 
 file* initFile() {
 
-	file * file = malloc(sizeof(*file));
-	if (file == NULL) {
+	file * f = NULL;
+	f = malloc(sizeof(file));
+	if (f == NULL) {
 			error er;
 			er.val=1;
 			er.message="error malloc file in INITFILE ";
 			testerror(er);
 		}
-	file->nbFile=0;
+	f->nbFile=0;
 	int i;
 	for (i = 0; i < 10; i++) {
-		file->tfs_direct[i] = 0;
+		f->tfs_direct[i] = 0;
 	}
-	file->tfs_indirect1 = 0;
-	file->tfs_indirect2 = 0;
-	file->tfs_size = 0;
-	file->tfs_subtype = 0;
-	file->tfs_type = 0;
-	file->tfs_next_free = 0;
-	return file;
+	f->tfs_indirect1 = 0;
+	f->tfs_indirect2 = 0;
+	f->tfs_size = 0;
+	f->tfs_subtype = 0;
+	f->tfs_type = 0;
+	f->tfs_next_free = 0;
+	return f;
 
 }
 

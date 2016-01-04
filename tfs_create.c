@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 
 		} else {
 			error er;
-			disk_id *disk = malloc(sizeof(*disk));
+			disk_id *disk = malloc(sizeof(disk));
 			if(disk==NULL){
 				er.val=1;
 				er.message="ERROR MALLOC DISK in TFS_CREATE";

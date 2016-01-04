@@ -9,7 +9,7 @@ int main(int argc, char *argv[]) {
 		nameFile = "disk.tfs";
 	}
 	error er;
-	disk_id *disk = malloc(sizeof(*disk));
+	disk_id *disk = malloc(sizeof(disk));
 	if (disk == NULL) {
 		er.val = 1;
 		er.message = "ERROR MALLOC DISK in TFS_ANALYSE";
@@ -34,13 +34,13 @@ int main(int argc, char *argv[]) {
 	printf("NOMBRE DE PARTITIONS : %d\n", nbPartitions);
 
 	int i;
-	for (i = 1; i < array[1] + 1; i++) {
-		printf("PARTITION : %d  | TAILLE : %d\n", i, array[i + 1]);
+	for (i = 0; i < array[1] ; i++) {
+		printf("PARTITION : %d  | TAILLE : %d\n", i, array[i + 2]);
 	}
 
 	printf("TAILLE OCCUPE AU TOTAL PAR PARTITIONS : %d\n",
 			array[nbPartitions + 2]);
-	printf("ESPACE DISPONIBLE : %d\n", array[nbPartitions + 3]);
+	printf("BLOCK DISPONIBLE : %d\n", array[nbPartitions + 3]);
 	printf("NOMBRE MAX DE PARTITION ENCORE CREABLE : %d\n",
 			array[nbPartitions + 4]);
 	free(array);
