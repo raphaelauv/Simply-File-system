@@ -6,6 +6,11 @@
 #include "ll.h"
 
 
+typedef struct {
+	uint32_t firstPositionInTFS;
+	disk_id *disque;
+} partition;
+
 
 // the numerotation of block start at 0 in every partition , the block 0 is the TTTFS Description Block
 error readBlockOfPartition (partition p,block b,uint32_t numberBlock);
@@ -126,13 +131,13 @@ error cleanBlock(partition p, uint32_t nbBlock , int FLAG,int FLAG_SECURE);
 #define FLAG_DELETE_SECURE 1
 #define FLAG_DELETE_SIMPLE 2
 
+
 /********************************************************/
 /**
  * API
  */
 
 int tokenize_command(char* argl, char** argv);
-
 
 int tfs_mkdir(const char *path, mode_t mode);
 int tfs_rmdir(const char *path);

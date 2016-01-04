@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
 		 * TEST PARTITION(S)  WITH ASKED DISK
 		 */
 		error er;
-		disk_id *disk = malloc(sizeof(*disk));
+		disk_id *disk = malloc(sizeof(disk));
 		if(disk==NULL){
 		er.val=1;
 		er.message="ERROR MALLOC disk in TFS_PARTITION";

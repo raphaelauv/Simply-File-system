@@ -71,7 +71,8 @@ int* getInfo(disk_id disk) {
 	testerror(er);
 
 	int nbParitionActual = nombre32bitsToValue(b->valeur[1]);
-	int *array=malloc(5*sizeof(int) + nbParitionActual*sizeof(int));
+	int *array=NULL;
+	array=malloc(5*sizeof(int) + nbParitionActual*sizeof(int));
 	if(array==NULL){
 		er.val=1;
 		er.message="MALLOC ERROR getInfo";
@@ -161,8 +162,8 @@ int charToInt(char a){
 
 nombre32bits* fourCharToNombre32bits(int a, int b, int c, int d) {
 
-	nombre32bits * bytes;
-	bytes = malloc(sizeof(*bytes));
+	nombre32bits * bytes= NULL;
+	bytes= malloc(sizeof(nombre32bits));
 	if(bytes==NULL){
 		error er;
 		er.val=1;
@@ -222,8 +223,8 @@ uint32_t nombre32bitsToValue(nombre32bits *bytes) {
 nombre32bits* valueToNombre32bits(uint32_t n) {
 
 	//maximum value : FFFFFFFF -> 4294967295;
-	nombre32bits * bytes;
-	bytes = malloc(sizeof(bytes));
+	nombre32bits * bytes = NULL;
+	bytes = malloc(sizeof(nombre32bits));
 	if(bytes==NULL){
 		error er;
 		er.val=1;
@@ -250,7 +251,8 @@ nombre32bits* valueToNombre32bits(uint32_t n) {
 }
 block* initBlock() {
 	error er;
-	block *block= malloc(sizeof(*block));
+	block *block= NULL;
+	block= malloc(sizeof(*block));
 	if(block==NULL){
 		er.val=1;
 		er.message="Error malloc initblock";

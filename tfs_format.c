@@ -2,6 +2,8 @@
 
 int main(int argc, char *argv[]) {
 
+
+
 	/********************************************************/
 	/**
 	 * TEST OF ARGUMENTS
@@ -35,7 +37,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 	error er;
-	disk_id *disk = malloc(sizeof(*disk));
+	disk_id *disk = malloc(sizeof(disk));
 	if(disk==NULL){
 		er.val=1;
 		er.message="ERROR MALLOC disk in TFS_FORMAT";
