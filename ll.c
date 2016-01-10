@@ -4,11 +4,12 @@ void testerror(error er) {
 	if (er.val != 0) {
 		fprintf(stderr, "\n%s\n", er.message);
 		exit(er.val);
-
 	}
 }
 
-/// return the first block of a partition on the TFS , -1 if its impossible
+/**
+ * return the first block of a partition on the TFS , -1 if its impossible
+ */
 int firstblockPositionOfPartition(int nbPartition, disk_id disk) {
 	int * array;
 	array = getInfo(disk);
@@ -31,7 +32,9 @@ int firstblockPositionOfPartition(int nbPartition, disk_id disk) {
 	return tailleBefore;
 }
 
-/// Return the size of the n partition
+/**
+ *  Return the size of the n partition
+ */
 int getSizePartition(int n,disk_id disk){
 
 	int * array;
@@ -68,7 +71,9 @@ int* getInfo(disk_id disk) {
 	b = initBlock();
 
 	er = read_block(disk, *b, 0);
+
 	testerror(er);
+
 
 	int nbParitionActual = nombre32bitsToValue(b->valeur[1]);
 	int *array=NULL;
@@ -85,6 +90,8 @@ int* getInfo(disk_id disk) {
 	int tailleTmp;
 	int i;
 
+
+
 	for (i = 0; i < nbParitionActual; i++) {
 		tailleTmp = nombre32bitsToValue(b->valeur[2 + i]);
 		array[2 + i] = tailleTmp; //size of the i partition
@@ -93,6 +100,7 @@ int* getInfo(disk_id disk) {
 	array[2 + nbParitionActual] = sizeOccupedByPartitions; //addition of the size of all partitions
 	array[3 + nbParitionActual] = array[0] - 1 - sizeOccupedByPartitions; //size availlable on drive
 	int max = 253 - nbParitionActual;
+
 
 	//nb of maximum partition possible
 	if (max > array[3 + nbParitionActual]) {
@@ -103,6 +111,7 @@ int* getInfo(disk_id disk) {
 
 	freeBlock(b);
 
+
 	return array;
 }
 
@@ -112,11 +121,10 @@ error stop_disk(disk_id id) {
 	int val;
 	val = fclose(id.fichier);
 	if (val == 0) {
-
 		er.val = 0;
 		er.message = "the file have been correctly close";
 	} else {
-		er.message = "a problem happend during the closing of the file";
+		er.message = "a problem happened during the closing of the file";
 		er.val = 1;
 	}
 	return er;
@@ -134,12 +142,19 @@ int check_for_endianness() {
 	return (int) *c;
 }
 
+/**
+ * Print stdout nombre32bits
+ */
 void printNombre32bits(nombre32bits *bytes) {
 	printf("%x %x %x %x\n", (unsigned char) bytes->val[0],
 			(unsigned char) bytes->val[1], (unsigned char) bytes->val[2],
 			(unsigned char) bytes->val[3]);
 
 }
+
+/**
+ * print stdout block
+ */
 void printBlock(block * block) {
 
 	int i;
@@ -157,8 +172,30 @@ int charToInt(char a){
 	return (int)a;
 }
 
+/**
+ * DEPRECED
+ */
+char* nombre32bitsToFourChar(nombre32bits *bytes) {
+	char nb[TFS_VOLUME_DIVISION_OCTAL];
+	char * nbPoint =nb;
+	if (check_for_endianness() == 0) {
 
+		nb[0] = (bytes->val[0]) << 24;
+		nb[1] = (bytes->val[1]) << 16;
+		nb[2] = (bytes->val[2]) << 8;
+		nb[3] = bytes->val[3];
 
+	} else {
+
+		nb[0] = (bytes->val[3]) << 24;
+		nb[1] = (bytes->val[2]) << 16;
+		nb[2] = (bytes->val[1]) << 8;
+		nb[3] = bytes->val[0];
+
+	}
+	printf("val nbPoint[0] : %d \n",nb[0]);
+	return nbPoint;
+}
 
 nombre32bits* fourCharToNombre32bits(int a, int b, int c, int d) {
 
@@ -251,9 +288,9 @@ nombre32bits* valueToNombre32bits(uint32_t n) {
 }
 block* initBlock() {
 	error er;
-	block *block= NULL;
-	block= malloc(sizeof(*block));
-	if(block==NULL){
+	block *b= NULL;
+	b= malloc(sizeof(block));
+	if(b==NULL){
 		er.val=1;
 		er.message="Error malloc initblock";
 		testerror(er);
@@ -262,10 +299,10 @@ block* initBlock() {
 	int i;
 
 	for (i = 0; i < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; i++) {
-		block->valeur[i] = valueToNombre32bits(0);
+		b->valeur[i] = valueToNombre32bits(0);
 	}
 
-	return block;
+	return b;
 
 }
 
@@ -281,26 +318,61 @@ void freeDisk(disk_id*disk) {
 	free(disk);
 }
 
+
+/**
+ * TO convert the block struct to an array for write_physical_block
+ */
+void static convertBlockToArray(block b, int array[]) {
+	int i;
+	int j;
+	for (i = 0; i < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; i++) {
+		for (j = 0; j < TFS_VOLUME_DIVISION_OCTAL; j++) {
+			array[(i*4) + j] = b.valeur[i]->val[j];
+		}
+	}
+}
+
+
+/**
+ * TO convert the array of read_physical_block to a block struct
+ */
+void static convertArrayToBlock(int array[], block b) {
+	int i;
+	int j;
+	for (i = 0; i < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; i++) {
+		for (j = 0; j < TFS_VOLUME_DIVISION_OCTAL; j++) {
+			b.valeur[i]->val[j] = array[(i*4) + j];
+			//printf("en  %d  vaut %d\n",(i*4)+j , array[(i*4) + j]);
+
+		}
+		//printf("valeur %d du block : %d\n",i,nombre32bitsToValue(b.valeur[i]));
+	}
+}
+
 error static read_physical_block(disk_id id, block b, uint32_t num) {
 
 	error er;
-	/*
-	printf("position actuelle : %d\n", (int) ftell(id.fichier));
-	rewind(id.fichier);
-	printf("revenu a zero\n");
-	*/
+	int lus;
+
 	num=num*TFS_VOLUME_BLOCK_SIZE;
 	fseek(id.fichier, num, SEEK_SET);
 	//printf("en position : %d\n", num);
 	int i;
-	int ecris;
+
+
+	//int array[TFS_VOLUME_BLOCK_SIZE];
+
 	for (i = 0; i < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; i++) {
-		ecris = fread((b.valeur[i]), 1, TFS_VOLUME_DIVISION_OCTAL, id.fichier);
+		lus = fread((b.valeur[i]), 1, TFS_VOLUME_DIVISION_OCTAL, id.fichier);
+
+		//lus = fread(array, 1, TFS_VOLUME_BLOCK_SIZE, id.fichier);
 		//printNombre32bits(b.valeur[i]);
-		if (ecris != TFS_VOLUME_DIVISION_OCTAL) {
+		if (lus != TFS_VOLUME_DIVISION_OCTAL) {
 			er.val = 1;
 			er.message = "error during write_physical_block in file";
 		}
+
+	//convertArrayToBlock(array,b);
 	}
 	er.val = 0;
 	return er;
@@ -312,19 +384,18 @@ error static write_physical_block(disk_id id, block b, uint32_t num) {
 	num=num*TFS_VOLUME_BLOCK_SIZE;
 	fseek(id.fichier, num, SEEK_SET);
 	error er;
+	//int array[TFS_VOLUME_BLOCK_SIZE];
+	//convertBlockToArray(b,array);
 
 	for (i = 0; i < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; i++) {
-/*
-		if (b.valeur[i] == NULL) {
-			printf("null\n");
-			b.valeur[i] = valueToNombre32bits(0);
-		}*/
-		//printNombre32bits(b.valeur[i]);
+
 		ecris = fwrite(b.valeur[i], 1, TFS_VOLUME_DIVISION_OCTAL, id.fichier);
+		//ecris = fwrite(array, 1, TFS_VOLUME_BLOCK_SIZE, id.fichier);
 		if (ecris != TFS_VOLUME_DIVISION_OCTAL) {
 			er.val = 1;
 			er.message = "error during write_physical_block in file";
 		}
+
 	}
 	fflush(id.fichier);
 	er.val = 0;
@@ -361,47 +432,3 @@ error sync_disk(disk_id id) {
 	error er;
 	return er;
 }
-/*
- int main(int argc, char *argv[]) {
-
- printf("%s\n", argv[0]);
- char cwd[1024];
- if (getcwd(cwd, sizeof(cwd)) != NULL)
- fprintf(stdout, "Current working dir: %s\n", cwd);
- else
- perror("getcwd() error");
- //disk_id a;
- block *b = malloc(sizeof(*b));
-
- printNombre32bits(intToNombre32bits(2349));
- b->valeur[0] = intToNombre32bits(2389);
- b->valeur[1] = intToNombre32bits(876);
-
- char toto[10] = "papapap";
- char* v = toto;
- printf("nom de fichier : %s\n", v);
- disk_id *disque = malloc(sizeof(*disque));
-
- start_disk(v, disque);
-
- //write_physical_block(*disque,*b,0);
-
- block*b2 = initBlock();
-
- read_physical_block(*disque, *b2, 0);
-
- free(b2);
-
- uint32_t a = 4294967295;
-
- printf("valeur demande : %lu\n", (unsigned long) a);
- nombre32bits*coco = valueToNombre32bits(a);
- printNombre32bits(coco);
- uint32_t toto;
- toto = nombre32bitsToValue(coco);
- printf("toto : %lu\n", (unsigned long) toto);
-
- return 0;
- }
-
- */
