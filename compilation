@@ -10,9 +10,11 @@ gcc tfs_analyze.c -lll -L /usr/lib/  -o tfs_analyze
 
 gcc tfs_partition.c -lll -L /usr/lib/  -o tfs_partition
 
+gcc -c -fPIC path.c -o path.o
+
 gcc -c -fPIC tfs.c -o tfs.o
 
-gcc -shared -fPIC tfs.o -o libtfs.so
+gcc -shared -fPIC tfs.o path.o -o libtfs.so
 
 sudo cp libtfs.so /usr/lib/
 

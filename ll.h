@@ -1,3 +1,6 @@
+#ifndef LL_H
+#define LL_H
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -43,8 +46,10 @@ void freeDisk(disk_id*disk);
 typedef struct{
 	unsigned char val[TFS_VOLUME_DIVISION_OCTAL];
 }nombre32bits;
+
 int charToInt(char a);
 
+char* nombre32bitsToFourChar(nombre32bits *bytes);
 nombre32bits* fourCharToNombre32bits(int a, int b, int c, int d);
 nombre32bits* valueToNombre32bits (uint32_t n);
 uint32_t nombre32bitsToValue(nombre32bits *bytes);
@@ -74,3 +79,8 @@ error stop_disk(disk_id id); //qui permet de terminer une session de travail sur
 
 int firstblockPositionOfPartition(int nbPartition, disk_id disk);
 int getSizePartition(int n,disk_id disk);
+
+
+#endif
+
+
