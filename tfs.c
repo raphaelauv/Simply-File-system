@@ -1,22 +1,356 @@
 #include "tfs.h"
 
 
+/**
+ * Test if the PATH start with FILE://
+ */
+void testStartOfPath(const char *path) {
+	if (path[0] == 'F' && path[1] == 'I' && path[2] == 'L' && path[3] == 'E'
+			&& path[4] == ':' && path[5] == '/' && path[6] == '/') {
+	}
+	else {
+		error er;
+		er.val = 1;
+		er.message = "The PATH do not start with FILE://";
+		testerror(er);
+	}
+}
 
+/**
+ * Tokenize argl every  "/" in array of tokens ( argv )
+ * return the number of value in argv
+ */
+int tokenize_Path(char* argl, char** argv) {
+    int i;
+    argv[0] = strtok(argl, "/");
+    for (i = 0; argv[i] != NULL; ++i)
+        argv[i+1] = strtok(NULL, "/");
+    return i;
+}
+
+
+/**
+ * Print the array of tokens
+ */
+void printTokenPath(int size,char** tokens) {
+	int i;
+	for (i = 0; i < size; i++) {
+		printf("%s \n", tokens[i]);
+	}
+}
+
+/**
+ * return the array of tokens with one step forward
+ */
+char** iterateInPath(char** tokens, int * size) {
+	char ** tok2;
+	if (*size > 0) {
+		*size = *size - 1;
+		tok2 = &(tokens[1]);
+
+	}else{
+		error er;
+		er.val=1;
+		er.message="iterate limit of Path OR PATH INCORRECT!!";
+		testerror(er);
+	}
+
+	return tok2;
+}
+
+
+/**
+ *Test SIZE of a nameEntry and if it end by \0
+ *return the size of the nameEntry
+ */
+int testNameEntry(char* nameEntry){
+	error er;
+	int ASCII_END_FOUND = 0;
+	int sizeNameEntry=0;
+	int i;
+	for (i = 0; i < SIZE_MAX_NAME_ENTRY; i++) {
+		if (nameEntry[i] == '\0') {
+			sizeNameEntry=i;
+			ASCII_END_FOUND = 1;
+			break;
+		}
+		sizeNameEntry++;
+	}
+	if(sizeNameEntry<1){
+		er.val = 1;
+		er.message = "the name of the folder is smaller than 1 characters :\n";
+		testerror(er);
+	}
+
+	if (!ASCII_END_FOUND) {
+		er.val = 1;
+		er.message = "the name of the folder is bigger than  SIZE_MAX_NAME_ENTRY :\n ";
+		testerror(er);
+	}
+	return sizeNameEntry;
+}
+
+/**
+ *Do a copy of path in copyPath without the start of path
+ */
+void  copyConstPathWithoutStart(const char *path, char copyPath[]) {
+	int i;
+	//copy of the const path in copyPah
+	for (i = 0; i < MAX_SIZE_PATH; i++) {
+		if (path[i] != '\0') {
+
+			//+7 -> we dont need FILE://
+			copyPath[i] = path[i + 7];
+		} else {
+			break;
+		}
+	}
+}
+
+/**
+ *  Verification of Path and creation of variable for the next operations
+ */
+int initPath_Size(const char *path, int *size,char **tabOfPath) {
+
+	testStartOfPath(path);
+	char copyPath[MAX_SIZE_PATH];
+
+	copyConstPathWithoutStart(path, copyPath);
+
+	*size = tokenize_Path(copyPath, tabOfPath);
+
+	//the user want create or delete in the HOST
+	if (strcmp(tabOfPath[0], "HOST") == 0) {
+		perror("use the unix command instead");
+		return -1;
+		/*
+		 //1 step
+		 tabOfPath=iterateInPath(tabOfPath,&size);
+		 int succes=-1;
+		 if (FLAG == FLAG_RMDIR) {
+		 succes = rmdir(path);
+		 }else if(FLAG == FLAG_MKDIR){
+		 succes = mkdir(path, mode);
+		 }
+		 if(succes==-1){
+		 er.val=1;
+		 er.message="ERROR MKDIR IN HOST";
+		 //testerror(er);
+		 }
+		 return 0;
+		 */
+	}
+	return 0;
+}
+
+
+
+
+
+uint32_t static getblockNumber_Of_File(uint32_t nbFile);
+uint32_t static positionInBlock_Of_File(uint32_t nbFile ,uint32_t blockNumber);
+
+
+error static add_OF_FLAG_FreeListe(partition p, uint32_t numberOfValueToAdd, int FLAG);
+uint32_t static remove_OF_FLAG_FreeListe(partition p, int FLAG);
+
+// the numbering of block start at 0 in every partition , the block 0 is the TTTFS Description Block
+error static readBlockOfPartition (partition p,block b,uint32_t numberBlock);
+error static writeBlockOfPartition (partition p,block b,uint32_t numberBlock);
+
+file* initFile();
+file* getFile_Of_FileTab(partition p,uint32_t nbFile);
+error static writeFile_Of_FileTab(partition p,file* file);
+
+
+descriptionBlock* initDescriptionBlock();
 error static readDescriptionBlock(partition p, descriptionBlock* dB);
 error static writeDescriptionBlock(partition p,descriptionBlock* dB);
 
-
+int static insertInFolderIndirect(partition p, file* fileParent,
+		char* nameEntry, int numberOfNewFile ,block* b1,int numberB1 ,int iter);
 int static insertInBlock(block * b, uint32_t nbFileParent,char* nameEntry,int numberOfNewFile);
 int static insertInFolder(partition p, file* fileParent,char* nameEntry,int numberOfNewFile);
 error static addEntry(partition p,uint32_t parentFolder , char* nameEntry,int FLAG);
+
+
 error static deleteEntry(partition p,uint32_t nbFileParent ,uint32_t nbFile, int FLAG_SECURE , int FOLDER_OPTION);
 void static delete_File_Indirect2(partition p, uint32_t nbBlock, int FLAG, int FLAG_SECURE);
 void static delete_File_Indirect1(partition p, uint32_t nbBlock,int FLAG, int FLAG_SECURE);
 void static delete_File_Direct(partition p, uint32_t nbBlock, int FLAG, int FLAG_SECURE);
 void static cleanBlock(partition p, uint32_t nbBlock , int FLAG,int FLAG_SECURE);
 
+uint32_t static searchEntryInFolder(partition p, uint32_t parentFolder,uint32_t nbFile ,char *nameEntry, int FLAG_SEARCH);
+uint32_t static searchEntryInBlock(block * b,  uint32_t nbBlock,uint32_t nbFile,char* nameEntry , int FLAG_SEARCH);
+int static createEmptyEntry(partition p, uint32_t parentFolder,int FLAG);
 
-//determine the blocknumber of the partition where is located the nbfile file
+int static initDisk_Partition(disk_id *disk, partition *p, char **tabOfPath, int *size);
+
+int static tfs_RM_MK_DIR(const char *path, mode_t mode , int FLAG);
+
+
+/********************************************************/
+/**
+ *
+ */
+// Tableau de toutes les structures de fichier.
+tfs_FILE tabOfFiles[tfs_BUFSIZ]={};
+
+/**
+ * Format the partition (nbpartition ) of a  File ( nameFile ) with  Max files
+ */
+int tfs_format(char* nameFile,int nbPartition,int maxFiles){
+	error er;
+	disk_id *disk = malloc(sizeof(*disk));
+	if(disk==NULL){
+		er.val=1;
+		er.message="ERROR MALLOC disk in TFS_FORMAT";
+		testerror(er);
+	}
+
+	/********************************************************/
+	/**
+	 * TTTFS Description Block
+	 */
+	block *b;
+
+	b = initBlock();
+	er = start_disk(nameFile, disk);
+	testerror(er);
+
+	int positionFirstBlock=firstblockPositionOfPartition(nbPartition,*disk);
+
+	int sizePartition=getSizePartition(nbPartition,*disk);
+
+
+	if(positionFirstBlock ==-1){
+		er.val=1;
+		er.message="The partition selected do not exist in the tfs";
+		testerror(er);
+	}
+
+	partition *p=malloc(sizeof(partition));
+	if(p==NULL){
+		er.val=1;
+		er.message="ERROR MALLOC partition in TFS_FORMAT";
+		testerror(er);
+	}
+
+	p->disque=disk;
+	p->firstPositionInTFS=positionFirstBlock;
+
+
+	er=readBlockOfPartition(*p,*b,0);
+	testerror(er);
+
+
+	if(nombre32bitsToValue(b->valeur[0])==TTTFS_MAGIC_NUMBER){
+		fprintf(stderr, "the partition already have "
+				"the magic number so tfs_format already been use \n");
+			return 1;
+	}
+
+
+	int nbFreeBlock =sizePartition-1;
+
+
+
+	/********************************************************/
+	/** MAX FILE
+	 *
+	 */
+	int nbOfBlockForFileTab = maxFiles/(TTTFS_NUMBER_OF_FILE_IN_ONE_BLOCK);
+	nbOfBlockForFileTab++;
+
+	//printf("\n nb of block for file tab : %d\n",nbOfBlockForFileTab);
+
+	//+1 is the root folder un-delatable
+	if(nbFreeBlock-(nbOfBlockForFileTab+maxFiles+1)<0){
+		fprintf(stderr, "\n-mf file_count argument,"
+						" the number of maximum files enter :  %d  is NOT CORRECT \n"
+						"because is bigger than what is possible even, if all files have the minimun size.\n"
+						"The maxmimum is %d files in this partition\n",maxFiles,
+						nbFreeBlock-(nbOfBlockForFileTab+1));
+		return 1;
+	}
+
+
+	free(b->valeur[0]);
+	b->valeur[0] = valueToNombre32bits(TTTFS_MAGIC_NUMBER);
+	free(b->valeur[1]);
+	b->valeur[1] = valueToNombre32bits(TFS_VOLUME_BLOCK_SIZE);
+	free(b->valeur[2]);
+	b->valeur[2] = valueToNombre32bits(sizePartition);
+	//-1 because of the root
+	free(b->valeur[5]);
+	b->valeur[5] = valueToNombre32bits(maxFiles);
+
+	/********************************************************/
+	/**
+	 * WRITE BLOCK OF DESCRIPTION
+	 */
+
+	er=writeBlockOfPartition(*p,*b,0);
+
+	testerror(er);
+
+	/********************************************************/
+	/**
+	 * TTTFS File Table
+	 */
+
+	maxFiles=maxFiles+1;// to add the ROOT un-delatable
+
+	int i;
+
+	for(i=maxFiles-1; i>-1 ; i--){
+		er=add_OF_FLAG_FreeListe(*p,i,FLAG_FILE);
+		testerror(er);
+	}
+
+	/********************************************************/
+	/**
+	 * TTTFS Data blocks & Free Blocks Chain
+	*/
+
+	int j;
+
+	int limit = nbOfBlockForFileTab;
+	for(j=sizePartition-1;j>limit;j--){
+
+		er=add_OF_FLAG_FreeListe(*p,j,FLAG_BLOCK);
+		testerror(er);
+	}
+	/********************************************************/
+	/**
+	 * CREATE THE ROOT
+	 */
+
+	int result=createEmptyEntry(*p,0,FLAG_ENTRY_FOLDER);
+	if(result==-1){
+		er.val=1;
+		er.message="error at creation of root folder , you should retry tfs_format";
+		testerror(er);
+	}
+
+	/********************************************************/
+	/**
+	 * FREE MEMORY
+	 */
+	freeBlock(b);
+	stop_disk(*disk);
+	freeDisk(disk);
+	free(p);
+	printf("SUCCES -> Format of %s\n",nameFile);
+
+	return 0;
+}
+
+
+
+/**
+ * determine the blocknumber of the partition where is located the nbfile file
+ */
 uint32_t getblockNumber_Of_File(uint32_t nbFile) {
 
 	if (nbFile < 0) {
@@ -25,12 +359,8 @@ uint32_t getblockNumber_Of_File(uint32_t nbFile) {
 		er.message = "in getblockNumber_Of_File the value of nbFile is <1 ";
 		testerror(er);
 	}
+	return (nbFile / (TTTFS_NUMBER_OF_FILE_IN_ONE_BLOCK)) + 1;
 
-	if (nbFile < TTTFS_NUMBER_OF_FILE_IN_ONE_BLOCK + 1) {
-		return 1; //1 because at 0 it is the description block
-	} else {
-		return (nbFile % TTTFS_NUMBER_OF_FILE_IN_ONE_BLOCK) + 1;
-	}
 }
 
 //determine the position of the nbfile fil in the blocknumber of the partition
@@ -42,7 +372,10 @@ uint32_t positionInBlock_Of_File(uint32_t nbFile, uint32_t blockNumber) {
 				"in positionInBlock_Of_File the value of blockNumber is negative or 0";
 		testerror(er);
 	}
-	return nbFile * TTTFS_NUMBER_OF_INT_IN_KEY_OF_FILE_TABLE;
+	if(nbFile >= TTTFS_NUMBER_OF_FILE_IN_ONE_BLOCK){
+		nbFile =nbFile % (TTTFS_NUMBER_OF_FILE_IN_ONE_BLOCK);
+	}
+	return nbFile*(TTTFS_NUMBER_OF_INT_IN_KEY_OF_FILE_TABLE);
 	/*else {
 	 return nbFile*TTTFS_NUMBER_OF_FILE_IN_ONE_BLOCK
 	 - ((blockNumber - 1) * TTTFS_NUMBER_OF_FILE_IN_ONE_BLOCK);
@@ -58,6 +391,7 @@ file* getFile_Of_FileTab(partition p, uint32_t nbFile) {
 
 	uint32_t blockNumber = getblockNumber_Of_File(nbFile);
 	uint32_t positionInBlock = positionInBlock_Of_File(nbFile, blockNumber);
+
 
 	error er;
 	block * b;
@@ -112,7 +446,7 @@ void static printFile(file* file) {
 }
 
 //write the info of *file of the nbFile in the partition p
-error writeFile_Of_FileTab(partition p, file* file) {
+error static writeFile_Of_FileTab(partition p, file* file) {
 	error er;
 
 	uint32_t blockNumber = getblockNumber_Of_File(file->nbFile);
@@ -383,6 +717,10 @@ file* initFile() {
 
 }
 
+/**
+ * the block or file entry is set to free
+ * FLAG is block or file
+ */
 error add_OF_FLAG_FreeListe(partition p, uint32_t numberOfValueToAdd, int FLAG) {
 
 	error er;
@@ -405,6 +743,7 @@ error add_OF_FLAG_FreeListe(partition p, uint32_t numberOfValueToAdd, int FLAG) 
 
 	} else if (FLAG == FLAG_FILE) {
 		old = dB->volumeFirstFreeFile;
+		file = getFile_Of_FileTab(p, numberOfValueToAdd);
 	} else {
 		er.val = 1;
 		er.message = "BAD FLAG USE IN putBlockInFreeBlockList";
@@ -420,9 +759,6 @@ error add_OF_FLAG_FreeListe(partition p, uint32_t numberOfValueToAdd, int FLAG) 
 					valueToNombre32bits(old);
 
 		} else if (FLAG == FLAG_FILE) {
-
-			file = getFile_Of_FileTab(p, numberOfValueToAdd);
-
 			file->tfs_next_free = old;
 
 		}
@@ -436,14 +772,17 @@ error add_OF_FLAG_FreeListe(partition p, uint32_t numberOfValueToAdd, int FLAG) 
 			b->valeur[TFS_VOLUME_NUMBER_VALUE_BY_BLOCK - 1] =
 					valueToNombre32bits(numberOfValueToAdd);
 		} else if (FLAG == FLAG_FILE) {
-			file = initFile();
+			//file = initFile();
+
+			//printf("dans ADD file number : %d",file->nbFile);
+
 			file->tfs_next_free = numberOfValueToAdd;
 		}
 	}
 
 	/********************************************************/
 	/**
-	 * write the new block or new file of the filetab
+	 * write the new block  or the new free file of the filetab
 	 */
 	if (FLAG == FLAG_BLOCK) {
 
@@ -772,10 +1111,62 @@ int static insertInBlock(block * b, uint32_t nbFileParent,char* nameEntry,int nu
 	return succes;
 }
 
+/*
+ * this function work for insertInFolder
+ *
+ *return 0 if succes
+ *return -1 if problem
+ */
+int static insertInFolderIndirect(partition p, file* fileParent,
+		char* nameEntry, int numberOfNewFile ,block* b1,int numberB1 ,int iter) {
+
+	error er;
+	block* sc_db1;
+	sc_db1 = initBlock();
+
+	/*****************************/
+	//we need a new block to add the new entry
+	if (nombre32bitsToValue(b1->valeur[iter]) == 0) {
+
+		uint32_t numberOfBlock = remove_OF_FLAG_FreeListe(p, FLAG_BLOCK);
+		if (numberOfBlock == -1) {
+			freeBlock(b1);
+			return -1;
+		}
+
+		free(b1->valeur[iter]);
+		b1->valeur[iter] = valueToNombre32bits(numberOfBlock);
+		er = writeBlockOfPartition(p, *b1, numberB1);
+
+	}
+	/*****************************/
+	int valBlock = nombre32bitsToValue(b1->valeur[iter]);
+	er = readBlockOfPartition(p, *sc_db1, valBlock);
+	testerror(er);
+
+	int result = insertInBlock(sc_db1, fileParent->nbFile, nameEntry,
+			numberOfNewFile);
+	if (result != -1) {
+		/**SUCCES TO INSERT*/
+		er = writeBlockOfPartition(p, *sc_db1, valBlock);
+		testerror(er);
+		freeBlock(sc_db1);
+		freeBlock(b1);
+		//the entry have been had in the folder , we can leave
+		return 0;
+	}
+
+	freeBlock(sc_db1);
+	freeBlock(b1);
+	return -1;
+}
+
 /**
  *Try to insert a new entry in the FOLDER , start by indirect and after indirect1 ...
  *return 0 if succes
  *return -1 if problem
+ *
+ *TODO condenser le code !!
  */
 int static insertInFolder(partition p, file* fileParent,char* nameEntry,int numberOfNewFile) {
 
@@ -785,23 +1176,25 @@ int static insertInFolder(partition p, file* fileParent,char* nameEntry,int numb
 	 */
 
 	error er;
-
 	block* b;
 	b = initBlock();
 
 	int i;
 	for (i = 0; i < DIRECT_TAB; i++) {
 
+		/*****************************/
 		//we need a new block to add the new entry
 		if (fileParent->tfs_direct[i] == 0) {
 			uint32_t numberOfBlock = remove_OF_FLAG_FreeListe(p, FLAG_BLOCK);
 			if (numberOfBlock == -1) {
+				freeBlock(b);
 				return -1;
 			}
 			fileParent->tfs_direct[i]=numberOfBlock;
 			er=writeFile_Of_FileTab(p,fileParent);
 			testerror(er);
 		}
+		/*****************************/
 
 		er = readBlockOfPartition(p, *b, fileParent->tfs_direct[i]);
 		testerror(er);
@@ -812,66 +1205,110 @@ int static insertInFolder(partition p, file* fileParent,char* nameEntry,int numb
 
 			er = writeBlockOfPartition(p, *b, fileParent->tfs_direct[i]);
 			testerror(er);
+			freeBlock(b);
 			//the entry have been had in the folder , we can leave
 			return 0;
 		}
 	}
+
+	freeBlock(b);
+
+
 	/********************************************************/
 	/**
 	 * INDIRECT1
 	 */
+	if(fileParent->tfs_indirect1==0){
+		/*****************************/
+		//INIT indirect1
+		uint32_t numberOfBlock = remove_OF_FLAG_FreeListe(p, FLAG_BLOCK);
+		fileParent->tfs_indirect1=numberOfBlock;
+		writeFile_Of_FileTab(p,fileParent);
+		testerror(er);
+		/*****************************/
+	}
+
 
 	block* b1;
 	b1 = initBlock();
 	er = readBlockOfPartition(p, *b1, fileParent->tfs_indirect1);
 	testerror(er);
 
+	int end;
 	int j;
 	for (j = 0; j < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; j++) {
-		if (nombre32bitsToValue(b1->valeur[j]) == 0) {
-			return j + DIRECT_TAB;
+		end = insertInFolderIndirect(p, fileParent, nameEntry, numberOfNewFile,
+				b1, fileParent->tfs_indirect1, j);
+		if (end == 0) {
+			return 0;
 		}
 	}
-
-	freeBlock(b1);
 
 	/********************************************************/
 	/**
 	 * INDIRECT2
 	 */
 
+	if (fileParent->tfs_indirect2 == 0) {
+		/*****************************/
+		//INIT indirect2
+		uint32_t numberOfBlock = remove_OF_FLAG_FreeListe(p, FLAG_BLOCK);
+		fileParent->tfs_indirect2 = numberOfBlock;
+		writeFile_Of_FileTab(p, fileParent);
+		testerror(er);
+		/*****************************/
+	}
 	block* b2;
 	b2 = initBlock();
 	er = readBlockOfPartition(p, *b2, fileParent->tfs_indirect2);
 
+
+	block* sc_db2;
+	sc_db2 = initBlock();
+
+
 	int h;
 	int k;
+	int valBlock;
 	for (h = 0; h < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; h++) {
 
-		// inside the block who countains other blocks
+		/*****************************/
+		//we need a new block to add the new entry
 		if (nombre32bitsToValue(b2->valeur[h]) == 0) {
+
 			uint32_t numberOfBlock = remove_OF_FLAG_FreeListe(p, FLAG_BLOCK);
-
-			block * b2;
-			b2 = initBlock();
-
-			testerror(er);
+			if (numberOfBlock == -1) {
+				freeBlock(b2);
+				freeBlock(sc_db2);
+				return -1;
+			}
 
 			free(b2->valeur[h]);
 			b2->valeur[h] = valueToNombre32bits(numberOfBlock);
+			er = writeBlockOfPartition(p, *b2, fileParent->tfs_indirect2);
 
-			freeBlock(b2);
-			//TODO
-			return DIRECT_MAX_SIZE + h;
 		}
+		/*****************************/
+
+		valBlock=nombre32bitsToValue(b2->valeur[h]);
+
+		er = readBlockOfPartition(p, *sc_db2,valBlock );
 		for (k = 0; k < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; k++) {
 
-			return j + DIRECT_TAB;
+			end = insertInFolderIndirect(p, fileParent, nameEntry,
+					numberOfNewFile, sc_db2, valBlock, k);
+			if (end == 0) {
+				freeBlock(b2);
+				freeBlock(sc_db2);
+				return 0;
+			}
 		}
 
-		freeBlock(b2);
+
 	}
 
+	freeBlock(sc_db2);
+	freeBlock(b2);
 	return -1;
 }
 
@@ -892,7 +1329,8 @@ error static addEntry(partition p,uint32_t parentFolder , char* nameEntry,int FL
 	if (!isFolder(fileParent)) {
 
 		er.val = 1;
-		er.message = "the entrance number %d is not a folder so you cant add something inside",fileParent->nbFile;
+		fprintf(stderr,"the entrance number %d is not a folder so you cant add something inside",fileParent->nbFile);
+
 		return er;
 	}
 
@@ -1037,10 +1475,15 @@ uint32_t static searchEntryInFolder(partition p, uint32_t parentFolder,uint32_t 
 				testerror(er);
 			}
 			if(result!=-1){
+
+				free(fileParent);
+				freeBlock(b);
 				return result;
 			}
 		}
 	}
+	free(fileParent);
+	freeBlock(b);
 	return -1;
 }
 
@@ -1099,7 +1542,7 @@ int tfs_rmdir(const char *path) {
  * return -1 if fail
  * return 0 if succes
  */
-int tfs_RM_MK_DIR(const char *path, mode_t mode , int FLAG){
+int static tfs_RM_MK_DIR(const char *path, mode_t mode , int FLAG){
 
 	error er;
 	int testResult=0;
@@ -1188,7 +1631,7 @@ int tfs_RM_MK_DIR(const char *path, mode_t mode , int FLAG){
     }
     testerror(er);
 
-
+    stop_disk(*disk);
 	freeDisk(disk);
 	free(p);
 	return 0;
@@ -1204,6 +1647,38 @@ int tfs_rename(const char *old, const char *new){
 }
 
 /**
+ * Return the position of the first empty entry in the file descriptor
+ * return -1 if no more place
+ */
+int static getFirstFreeEntry_In_FileDescriptor() {
+	int position;
+	for (position = 0; position < tfs_FOPEN_MAX; position++) {
+		if (tabOfFiles[position].flags == 0) {
+			return position;
+		}
+	}
+	return -1;
+}
+
+/**
+ * Return the pointer of the fildes position in the file despcriptor
+ * return NULL is fail
+ */
+tfs_FILE* getFileofPosition(int fildes){
+
+	if (fildes < 0 || fildes > tfs_FOPEN_MAX) {
+		perror("argument of cleanPositionInFileDescriptor is out of bound");
+		return NULL;
+	}
+	if (tabOfFiles[fildes].flags == 0) {
+		perror("Error with argument , do not math an open file");
+		return NULL;
+	}
+	tfs_FILE* fp=&(tabOfFiles[fildes]);
+	return fp;
+}
+
+/**
  * try to open a file in TTFS
  * return the number in file descriptor
  * return -1 if fail
@@ -1211,20 +1686,65 @@ int tfs_rename(const char *old, const char *new){
  */
 int tfs_open(const char *name, int oflag, ...) {
 
-	MY_FILE* fp;
-	for (fp = tabOfFiles + 3; fp < tabOfFiles + MY_FOPEN_MAX; ++fp) {
-	        if (fp->flags == 0)
-	            break;
-	  }
+	int position=getFirstFreeEntry_In_FileDescriptor();
+	if(position==-1){
+		return -1;
+	}
+	tfs_FILE* fp=&(tabOfFiles[position]);
+	if(fp==NULL){
+		return -1;
+	}
+	//TODO oflag !!
+
+	fp->flags=1;
+	fp->buf = NULL;
+	fp->count = 0;
+	return position;
 
 }
 
+/**
+ * close an open file of number fildes
+ * return 0 if succes
+ * return -1 if fail
+ */
+int tfs_close(int fildes) {
+	tfs_FILE* fp=getFileofPosition(fildes);
+	if(fp==NULL){
+			return -1;
+		}
+	//tfs_flushbuffer(MY_EOF, fp);
+	 if (fp->buf != NULL) {
+	        free(fp->buf);
+	        fp->buf = NULL;
+	    }
+	fp->flags = 0;
 
-int tfs_close(int fildes){
-
-	MY_FILE* fp=&(tabOfFiles[fildes]);
-	//flushbuffer(MY_EOF,fp);
-	freeDisk(fp->p.disque);
-
-
+	return 0;
 }
+
+
+ssize_t tfs_read(int fildes, void *buf, size_t nbytes) {
+	ssize_t size;
+	tfs_FILE* fp = getFileofPosition(fildes);
+	if (fp == NULL) {
+		return -1;
+	}
+	int i=0;
+	/*
+	for()
+	if (fp->count-- > 0){
+		return *(fp->pos++);
+	}
+	else{
+	return _fillbuffer(fp);
+	}
+	 */
+	return size;
+}
+
+ssize_t tfs_write(int fildes,void *buf,size_t nbytes){
+	ssize_t size;
+	return size;
+}
+

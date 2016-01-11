@@ -82,5 +82,3 @@ int getSizePartition(int n,disk_id disk);
 
 
 #endif
-
-

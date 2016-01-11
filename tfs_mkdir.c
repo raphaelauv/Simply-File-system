@@ -1,5 +1,7 @@
 #include "tfs.h"
-
+/**
+ * STDOUT -> succes and the path of folder create
+ */
 int main(int argc, char *argv[]) {
 
 	error er;
@@ -38,8 +40,7 @@ int main(int argc, char *argv[]) {
 			numberOfFolder++;
 			succes = tfs_mkdir(argv[i], mode);
 			if (succes == 0) {
-				//TODO put the printf in comment
-				printf("succes !!\n");
+				fprintf(stdout,"succes -> %s\n",argv[i]);
 			} else if (succes == -1) {
 				return -1;
 			}
