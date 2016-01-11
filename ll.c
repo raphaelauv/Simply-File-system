@@ -322,11 +322,12 @@ void freeDisk(disk_id*disk) {
 /**
  * TO convert the block struct to an array for write_physical_block
  */
-void static convertBlockToArray(block b, int array[]) {
+void static convertBlockToArray(block b, unsigned char array[]) {
 	int i;
 	int j;
 	for (i = 0; i < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; i++) {
 		for (j = 0; j < TFS_VOLUME_DIVISION_OCTAL; j++) {
+			//printf("val k %d : %d \n ",(i*4) + j ,b.valeur[i]->val[j]);
 			array[(i*4) + j] = b.valeur[i]->val[j];
 		}
 	}
@@ -336,7 +337,7 @@ void static convertBlockToArray(block b, int array[]) {
 /**
  * TO convert the array of read_physical_block to a block struct
  */
-void static convertArrayToBlock(int array[], block b) {
+void static convertArrayToBlock(unsigned char array[], block b) {
 	int i;
 	int j;
 	for (i = 0; i < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; i++) {
@@ -357,23 +358,24 @@ error static read_physical_block(disk_id id, block b, uint32_t num) {
 	num=num*TFS_VOLUME_BLOCK_SIZE;
 	fseek(id.fichier, num, SEEK_SET);
 	//printf("en position : %d\n", num);
-	int i;
+	//int i;
 
 
-	//int array[TFS_VOLUME_BLOCK_SIZE];
+	unsigned char array[TFS_VOLUME_BLOCK_SIZE];
 
-	for (i = 0; i < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; i++) {
-		lus = fread((b.valeur[i]), 1, TFS_VOLUME_DIVISION_OCTAL, id.fichier);
+	//for (i = 0; i < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; i++) {
+		//lus = fread((b.valeur[i]), 1, TFS_VOLUME_DIVISION_OCTAL, id.fichier);
 
-		//lus = fread(array, 1, TFS_VOLUME_BLOCK_SIZE, id.fichier);
+		lus = fread(array, 1, TFS_VOLUME_BLOCK_SIZE, id.fichier);
 		//printNombre32bits(b.valeur[i]);
-		if (lus != TFS_VOLUME_DIVISION_OCTAL) {
+		//printf("val read : %d\n",lus);
+		if (lus != TFS_VOLUME_BLOCK_SIZE) {
 			er.val = 1;
 			er.message = "error during write_physical_block in file";
 		}
 
-	//convertArrayToBlock(array,b);
-	}
+	convertArrayToBlock(array,b);
+	//}
 	er.val = 0;
 	return er;
 
@@ -384,19 +386,19 @@ error static write_physical_block(disk_id id, block b, uint32_t num) {
 	num=num*TFS_VOLUME_BLOCK_SIZE;
 	fseek(id.fichier, num, SEEK_SET);
 	error er;
-	//int array[TFS_VOLUME_BLOCK_SIZE];
-	//convertBlockToArray(b,array);
+	unsigned char array[TFS_VOLUME_BLOCK_SIZE];
+	convertBlockToArray(b,array);
 
-	for (i = 0; i < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; i++) {
+	//for (i = 0; i < TFS_VOLUME_NUMBER_VALUE_BY_BLOCK; i++) {
 
-		ecris = fwrite(b.valeur[i], 1, TFS_VOLUME_DIVISION_OCTAL, id.fichier);
-		//ecris = fwrite(array, 1, TFS_VOLUME_BLOCK_SIZE, id.fichier);
-		if (ecris != TFS_VOLUME_DIVISION_OCTAL) {
+		//ecris = fwrite(b.valeur[i], 1, TFS_VOLUME_DIVISION_OCTAL, id.fichier);
+		ecris = fwrite(array, 1, TFS_VOLUME_BLOCK_SIZE, id.fichier);
+		if (ecris != TFS_VOLUME_BLOCK_SIZE) {
 			er.val = 1;
 			er.message = "error during write_physical_block in file";
 		}
 
-	}
+	//}
 	fflush(id.fichier);
 	er.val = 0;
 	return er;
